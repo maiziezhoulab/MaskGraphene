@@ -105,11 +105,4 @@ Open-source ST datasets information:
 
 <h2> Citing </h2>
 
-@article{hu2024maskgraphene,
-  title={MaskGraphene: an advanced framework for interpretable latent representation for multi-slice, multi-condition spatial transcriptomics},
-  author={Yunfei Hu, Zhenhan Lin, Manfei Xie, Weiman Yuan, Yikang Li, Mingxing Rao, Yichen Henry Liu, Wenjun Shen, Lu Zhang, and Xin Maizie Zhou},
-  journal={bioRxiv},
-  pages={2024--02},
-  year={2024},
-  publisher={Cold Spring Harbor Laboratory}
-}
+@article{hu2024maskgraphene, title={MaskGraphene: an advanced framework for interpretable latent representation for multi-slice, multi-condition spatial transcriptomics}, author={Yunfei Hu, Zhenhan Lin, Manfei Xie, Weiman Yuan, Yikang Li, Mingxing Rao, Yichen Henry Liu, Wenjun Shen, Lu Zhang, and Xin Maizie Zhou}, journal={bioRxiv}, pages={2024--02}, year={2024}, publisher={Cold Spring Harbor Laboratory} }
