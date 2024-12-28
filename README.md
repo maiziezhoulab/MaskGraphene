@@ -107,7 +107,7 @@ Open-source ST datasets information:
 
 
 
-BibTeX:
+<!-- BibTeX: -->
 ```bibtex
 @article{hu2024maskgraphene,
   title={MaskGraphene: an advanced framework for interpretable latent representation for multi-slice, multi-condition spatial transcriptomics},
