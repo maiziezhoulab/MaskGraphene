@@ -81,60 +81,15 @@ python ../maskgraphene_main.py --max_epoch 2000 --max_epoch_triplet 500 --loggin
                                --seeds 2023 --num_remasking 1 --hvgs 3000 --dataset DLPFC --consecutive_prior 1 --lr 0.001
 ``` -->
 
-Supported ST datasets:
+Open-source ST datasets information:
 
-.. list-table:: ST Dataset Info Table
-   :widths: 25 25 50 50 50 50 50 50
-   :header-rows: 1
-
-   * - ST Dataset
-     - ST type
-     - Abbreviations
-     - ST protocol
-     - Num. of slices
-     - Data Source
-     - Annotation Source
-     - Download link
-   * - Human Dorsal Lateral Prefrontal Cortex data
-     - Sequencing-based
-     - DLPFC
-     - 10x Visium
-     - 12
-     - `spatialLIBD <http://spatial.libd.org/spatialLIBD/>`__
-     - `spatialLIBD <http://spatial.libd.org/spatialLIBD/>`__
-     - `link <https://zenodo.org/records/10698880>`__
-   * - Mouse Brain Section 2 Sagittal Anterior and Posterior
-     - Sequencing-based
-     - MB2SA\&P
-     - 10x Visium
-     - 2
-     - `Mouse Brain Serial Section 2 Sagittal Anterior <https://www.10xgenomics.com/resources/datasets/mouse-brain-serial-section-2-sagittal-anterior-1-standard>`__
-     - `ConGI Analysis Data <https://github.com/biomed-AI/ConGI>`__
-     - `link <https://zenodo.org/records/10698931>`__
-   * - MOSTA Embryo
-     - Sequencing-based
-     - Embryo
-     - Stereo-seq
-     - :math:`>=50`
-     - `MOSTA Resource <https://db.cngb.org/stomics/mosta/resource/>`__
-     - `MOSTA Resource <https://db.cngb.org/stomics/mosta/resource/>`__
-     - `link <https://zenodo.org/records/10698963>`__
-   * - Mouse Hypothalamus
-     - Imaging-based
-     - MHypo
-     - MERFISH
-     - 5
-     - `Datadryad <https://datadryad.org/stash/dataset/doi:10.5061/dryad.8t8s248>`__
-     - `BASS Analysis Data <https://github.com/zhengli09/BASS-Analysis/blob/master/data/MERFISH_Animal1.RData>`__
-     - `link <https://zenodo.org/records/10698909>`__
-   * - Mouse Brain
-     - Imaging-based
-     - MB
-     - MERFISH
-     - 33
-     - `Zenodo Records <https://zenodo.org/records/8167488>`__
-     - `link <https://zenodo.org/records/8167488>`__
-     - `link <https://zenodo.org/records/8167488>`__
+| ST Dataset                                     | ST Type         | Abbreviations | ST Protocol   | Num. of Slices | Data Source                                                                                           | Annotation Source                                                                                     | Download Link                                                                                         |
+|-----------------------------------------------|----------------|---------------|---------------|----------------|-------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
+| Human Dorsal Lateral Prefrontal Cortex (DLPFC) | Sequencing-based | DLPFC        | 10x Visium    | 12             | [spatialLIBD](http://spatial.libd.org/spatialLIBD/)                                                  | [spatialLIBD](http://spatial.libd.org/spatialLIBD/)                                                  | [Link](https://zenodo.org/records/10698880)                                                          |
+| Mouse Brain Section 2 Sagittal Anterior and Posterior | Sequencing-based | MB2SA&P      | 10x Visium    | 2              | [Mouse Brain Serial Section 2 Sagittal Anterior](https://www.10xgenomics.com/resources/datasets/mouse-brain-serial-section-2-sagittal-anterior-1-standard) | [ConGI Analysis Data](https://github.com/biomed-AI/ConGI)                                           | [Link](https://zenodo.org/records/10698931)                                                          |
+| MOSTA Embryo                                   | Sequencing-based | Embryo       | Stereo-seq    | ≥50            | [MOSTA Resource](https://db.cngb.org/stomics/mosta/resource/)                                         | [MOSTA Resource](https://db.cngb.org/stomics/mosta/resource/)                                         | [Link](https://zenodo.org/records/10698963)                                                          |
+| Mouse Hypothalamus                             | Imaging-based   | MHypo         | MERFISH       | 5              | [Datadryad](https://datadryad.org/stash/dataset/doi:10.5061/dryad.8t8s248)                            | [BASS Analysis Data](https://github.com/zhengli09/BASS-Analysis/blob/master/data/MERFISH_Animal1.RData) | [Link](https://zenodo.org/records/10698909)                                                          |
+| Mouse Brain                                    | Imaging-based   | MB            | MERFISH       | 33             | [Zenodo Records](https://zenodo.org/records/8167488)                                                 | [Zenodo Records](https://zenodo.org/records/8167488)                                                 | [Link](https://zenodo.org/records/8167488)                                                          |
 
 
 <h2>Notebook Tutorials </h2>
