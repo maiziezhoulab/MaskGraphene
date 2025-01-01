@@ -292,51 +292,47 @@ def run_mask_graphene_aligner(graph, model, device, ad_concat, section_ids, max_
     ad_concat.obsm["maskgraphene"] = embedding.cpu().detach().numpy()
     
     if use_mnn:
-        mnn_dict = create_dictionary_mnn(ad_concat, use_rep="maskgraphene", batch_name='batch_name', k=50, verbose = 1, iter_comb=None)
-
-        anchor_ind = []
-        positive_ind = []
-        negative_ind = []
-        for batch_pair in mnn_dict.keys():  # pairwise compare for multiple batches
-            batchname_list = ad_concat.obs['batch_name'][mnn_dict[batch_pair].keys()]
-            #             print("before add KNN pairs, len(mnn_dict[batch_pair]):",
-            #                   sum(adata_new.obs['batch_name'].isin(batchname_list.unique())), len(mnn_dict[batch_pair]))
-
-            cellname_by_batch_dict = dict()
-            for batch_id in range(len(section_ids)):
-                cellname_by_batch_dict[section_ids[batch_id]] = ad_concat.obs_names[
-                    ad_concat.obs['batch_name'] == section_ids[batch_id]].values
-
-            anchor_list = []
-            positive_list = []
-            negative_list = []
-            for anchor in mnn_dict[batch_pair].keys():
-                anchor_list.append(anchor)
-                ## np.random.choice(mnn_dict[batch_pair][anchor])
-                positive_spot = mnn_dict[batch_pair][anchor][0]  # select the first positive spot
-                positive_list.append(positive_spot)
-                section_size = len(cellname_by_batch_dict[batchname_list[anchor]])
-                negative_list.append(
-                    cellname_by_batch_dict[batchname_list[anchor]][np.random.randint(section_size)])
-
-            batch_as_dict = dict(zip(list(ad_concat.obs_names), range(0, ad_concat.shape[0])))
-            anchor_ind = np.append(anchor_ind, list(map(lambda _: batch_as_dict[_], anchor_list)))
-            positive_ind = np.append(positive_ind, list(map(lambda _: batch_as_dict[_], positive_list)))
-            negative_ind = np.append(negative_ind, list(map(lambda _: batch_as_dict[_], negative_list)))
-
         epoch_iter = tqdm(range(max_epoch_triplet))
         for epoch in epoch_iter:
+            if epoch % 100 == 0:
+                mnn_dict = create_dictionary_mnn(ad_concat, use_rep="maskgraphene", batch_name='batch_name', k=50, iter_comb=None)
+                anchor_ind = []
+                positive_ind = []
+                negative_ind = []
+                for batch_pair in mnn_dict.keys():  # pairwise compare for multiple batches
+                    batchname_list = ad_concat.obs['batch_name'][mnn_dict[batch_pair].keys()]
+
+                    cellname_by_batch_dict = dict()
+                    for batch_id in range(len(section_ids)):
+                        cellname_by_batch_dict[section_ids[batch_id]] = ad_concat.obs_names[
+                            ad_concat.obs['batch_name'] == section_ids[batch_id]].values
+
+                    anchor_list = []
+                    positive_list = []
+                    negative_list = []
+                    for anchor in mnn_dict[batch_pair].keys():
+                        anchor_list.append(anchor)
+                        ## np.random.choice(mnn_dict[batch_pair][anchor])
+                        positive_spot = mnn_dict[batch_pair][anchor][0]  # select the first positive spot
+                        positive_list.append(positive_spot)
+                        section_size = len(cellname_by_batch_dict[batchname_list[anchor]])
+                        negative_list.append(
+                            cellname_by_batch_dict[batchname_list[anchor]][np.random.randint(section_size)])
+
+                    batch_as_dict = dict(zip(list(ad_concat.obs_names), range(0, ad_concat.shape[0])))
+                    anchor_ind = np.append(anchor_ind, list(map(lambda _: batch_as_dict[_], anchor_list)))
+                    positive_ind = np.append(positive_ind, list(map(lambda _: batch_as_dict[_], positive_list)))
+                    negative_ind = np.append(negative_ind, list(map(lambda _: batch_as_dict[_], negative_list)))
             model.train()
             optimizer.zero_grad()
 
             _loss = model(graph, x, targets=target_nodes)
-            if epoch % 100 == 0 or epoch == 500:
-                with torch.no_grad():
-                    z = model.embed(graph, x)
-                
-                anchor_arr = z[anchor_ind,]
-                positive_arr = z[positive_ind,]
-                negative_arr = z[negative_ind,]
+            with torch.no_grad():
+                z = model.embed(graph, x)
+
+            anchor_arr = z[anchor_ind,]
+            positive_arr = z[positive_ind,]
+            negative_arr = z[negative_ind,]
 
             triplet_loss = torch.nn.TripletMarginLoss(margin=1, p=2, reduction='mean')
             tri_output = triplet_loss(anchor_arr, positive_arr, negative_arr)
@@ -347,19 +343,13 @@ def run_mask_graphene_aligner(graph, model, device, ad_concat, section_ids, max_
 
             if scheduler is not None:
                 scheduler.step()
-            loss_dict = {"loss": loss.item()}
             epoch_iter.set_description(f"# Epoch {epoch}: train_loss: {loss.item():.4f}")
-            if logger is not None:
-                loss_dict["lr"] = get_current_lr(optimizer)
-                logger.log(loss_dict, step=epoch)
-        
-            # z = model.embed(graph, x)
+            
+
         with torch.no_grad():
             embedding = model.embed(graph, x)
         ad_concat.obsm["maskgraphene_mnn"] = embedding.cpu().detach().numpy()
 
-    """calculate ARI & umap & viz"""
-    print("args.num_class", args.num_class)
     if use_mnn:
         mclust_R(ad_concat, modelNames='EEE', num_cluster=num_class, used_obsm='maskgraphene_mnn')
     else:
@@ -428,7 +418,7 @@ def localMG(args):
 
     lr = args.lr
     weight_decay = args.weight_decay
-    logs = False
+    logger = None
     use_scheduler = args.scheduler
 
     """mid files save path"""

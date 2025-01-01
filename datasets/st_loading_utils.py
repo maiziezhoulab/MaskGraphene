@@ -478,8 +478,8 @@ def create_dictionary_mnn(adata, use_rep, batch_name, k=150, save_on_disk=True, 
         key_name1 = batch_name_df.loc[comb[0]].values[0] + "_" + batch_name_df.loc[comb[1]].values[0]
         mnns[
             key_name1] = {}  # for multiple-slice setting, the key_names1 can avoid the mnns replaced by previous slice-pair
-        if (verbose > 0):
-            print('Processing datasets {}'.format((i, j)))
+        # if (verbose > 0):
+        #     print('Processing datasets {}'.format((i, j)))
 
         # mapping: new -> ref (151674 -> 151673)
         new = list(cells[j])

@@ -47,9 +47,9 @@ pip install  dglgo -f https://data.dgl.ai/wheels-test/repo.html
 
 <h2>Quick Start </h2>
 
-<!-- For quick start, you could run the scripts: 
+For quick start, you could run the scripts: 
 
-**mouse Hypothalamus -0.19/-0.24 generate hard-links**
+<!-- **mouse Hypothalamus -0.19/-0.24 generate hard-links**
 
 ```bash
 python ../localMG_main.py --max_epoch 3000 --max_epoch_triplet 1000 --logging False --section_ids " -0.19,-0.24" --num_class 8 --load_model False --num_hidden "512,32" 
@@ -62,15 +62,37 @@ python ../localMG_main.py --max_epoch 3000 --max_epoch_triplet 1000 --logging Fa
 ```bash
 python ../maskgraphene_main.py --max_epoch 3000 --max_epoch_triplet 1000 --logging False --section_ids " -0.19,-0.24" --num_class 8 --load_model False --num_hidden "512,32" 
                                --exp_fig_dir "./" --h5ad_save_dir "./" --st_data_dir "./" --alpha_l 3 --lam 1 --loss_fn "sce" --mask_rate 0.50 --in_drop 0 --attn_drop 0 --remask_rate 0.50
-                               --seeds 2023 --num_remasking 1 --hvgs 0 --dataset mHypothalamus --consecutive_prior 1 --lr 0.001
+                               --seeds 2023 --num_remasking 1 --hvgs 0 --dataset mHypothalamus --consecutive_prior 1 --lr 0.001 -->
 ```
 
 **DLPFC 151507/151508 generate hard-links**
 
 ```bash
-python ../localMG_main.py --max_epoch 2000 --max_epoch_triplet 500 --logging False --section_ids "151507,151508" --num_class 7 --load_model False --num_hidden "512,32"
-                          --exp_fig_dir "./" --h5ad_save_dir "./" --st_data_dir "./"  --alpha_l 1 --lam 1 --loss_fn "sce" --mask_rate 0.5 --in_drop 0 --attn_drop 0 --remask_rate 0.1
-                          --seeds 2023 --num_remasking 1 --hvgs 3000 --dataset DLPFC --consecutive_prior 1 --lr 0.001
+name="DLPFC"
+num_layer="7"
+data_path="../../spatial_benchmarking/benchmarking_data/DLPFC12"
+output_path="../hard_links/DLPFC"
+pairs_to_run=("151507,151508")
+rounds_to_run=("1")
+seeds_to_run=("2024")
+
+for ((i=0; i<${#rounds_to_run[@]}; i++)); do
+    seed=${seeds_to_run[$i]}
+    round=${rounds_to_run[$i]}
+    echo "Running for round $round"
+    new_directory="$output_path"
+    if [ ! -d "$new_directory" ]; then
+        # Create the directory if it doesn't exist
+        mkdir -p "$new_directory"
+        echo "Created new directory: $new_directory"
+    fi 
+    for pair in "${pairs_to_run[@]}"; do
+        echo "Running for $pair"
+        python ../local_alignment_main.py --max_epoch 2000 --max_epoch_triplet 1000 --logging False --section_ids "$pair" \
+                       --num_class $((num_layer)) --load_model False --num_hidden "1024,40" --alpha_l 2 --lam 1 --loss_fn "sce" --mask_rate 0.5 --in_drop 0 --attn_drop 0 --remask_rate 0.1 --exp_fig_dir "$new_directory" --h5ad_save_dir "./" --st_data_dir "$data_path" \
+                       --seeds $((seed)) --sim_dir "$sim_path"  --num_remasking 1 --hvgs 8000 --dataset "$name" --consecutive_prior 1 --lr 0.001 --device 0
+    done
+done
 ```   
 
 **DLPFC 151507/151508**
@@ -79,7 +101,7 @@ python ../localMG_main.py --max_epoch 2000 --max_epoch_triplet 500 --logging Fal
 python ../maskgraphene_main.py --max_epoch 2000 --max_epoch_triplet 500 --logging False --section_ids "151507,151508" --num_class 7 --load_model False --num_hidden "512,32" 
                                --exp_fig_dir "./" --h5ad_save_dir "./" --st_data_dir "./" --alpha_l 1 --lam 1 --loss_fn "sce" --mask_rate 0.5 --in_drop 0 --attn_drop 0 --remask_rate 0.1 
                                --seeds 2023 --num_remasking 1 --hvgs 3000 --dataset DLPFC --consecutive_prior 1 --lr 0.001
-``` -->
+```
 
 Open-source ST datasets information:
 
