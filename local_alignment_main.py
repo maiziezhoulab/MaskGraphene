@@ -471,11 +471,7 @@ def localMG(args):
             slice1 = batchlist_[0]
             slice2 = batchlist_[1]
 
-            slice1.write_h5ad(osp.join(exp_fig_dir, section_ids[0] +'_after_maskgraphene_mnn.h5'),)
-            slice2.write_h5ad(osp.join(exp_fig_dir, section_ids[1] +'_after_maskgraphene_mnn.h5'),)
-            bigValue = 10000
             global_PI = np.zeros((len(slice1.obs.index), len(slice2.obs.index)))
-            cluster_matrix = np.ones((len(slice1.obs.index), len(slice2.obs.index)))*bigValue
             slice1_idx_mapping = {}
             slice2_idx_mapping = {}
             for i in range(len(slice1.obs.index)):
@@ -483,8 +479,6 @@ def localMG(args):
             for i in range(len(slice2.obs.index)):
                 slice2_idx_mapping[slice2.obs.index[i]] = i
             
-            # temp_local_pi_list = []
-            #original: for i in range(args.num_class):
             for i in range(num_layers):
                 print("run for cluster:", i)
                 subslice1 = slice1[slice1.obs['mclust']==i+1]
@@ -498,7 +492,7 @@ def localMG(args):
                     for ii in range(local_PI.shape[0]):
                         for jj in range(local_PI.shape[1]):
                             global_PI[slice1_idx_mapping[subslice1.obs.index[ii]]][slice2_idx_mapping[subslice2.obs.index[jj]]] = local_PI[ii][jj]
-                            cluster_matrix[slice1_idx_mapping[subslice1.obs.index[ii]]][slice2_idx_mapping[subslice2.obs.index[jj]]] = i
+                            # cluster_matrix[slice1_idx_mapping[subslice1.obs.index[ii]]][slice2_idx_mapping[subslice2.obs.index[jj]]] = i
         else:
             return None
 

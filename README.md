@@ -118,9 +118,9 @@ Open-source ST datasets information:
 
 [Tutorial 1: hard-links generation](https://github.com/maiziezhoulab/MaskGraphene/blob/main/Tutorial%201_Hard%20link%20generation.ipynb)
 
-[Tutorial 2: MG on DLPFC](https://github.com/maiziezhoulab/MaskGraphene/blob/main/Tutorial%202_MaskGraphene%20on%20DLPFC.ipynb)
+[Tutorial 2: MaskGraphene on DLPFC](https://github.com/maiziezhoulab/MaskGraphene/blob/main/Tutorial%202_MaskGraphene%20on%20DLPFC.ipynb)
 
-[Tutorial 3: MG on MHypo](https://github.com/maiziezhoulab/MaskGraphene/blob/main/Tutorial%203_MaskGraphene%20on%20MHypo.ipynb)
+[Tutorial 3: MaskGraphene on MHypo](https://github.com/maiziezhoulab/MaskGraphene/blob/main/Tutorial%203_MaskGraphene%20on%20MHypo.ipynb)
 
 [Tutorial 4: reproduction](https://github.com/maiziezhoulab/MaskGraphene/blob/main/Tutorial%204_Analyses%20reproduction.ipynb)
 
