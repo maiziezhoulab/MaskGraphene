@@ -1,6 +1,6 @@
 <h1> MaskGraphene: an advanced framework for interpretable latent representation for multi-slice, multi-condition spatial transcriptomics </h1>
 
-Implementation for paper:  [MaskGraphene]().
+Implementation for paper:  [MaskGraphene](https://www.biorxiv.org/content/10.1101/2024.02.21.581387v1.abstract).
 <img src="/figs/pipeline.png">
 
 <h2>Online documentation </h2>
@@ -9,8 +9,8 @@ Please refer to this [page](https://maskgraphene-tutorial.readthedocs.io/en/late
 
 <h2>Dependencies </h2>
 
-* Python >= 3.9
-* [Pytorch](https://pytorch.org/) == 2.0.1
+* Python>=3.9
+* [Pytorch](https://pytorch.org/)==2.0.1
 * anndata==0.9.2
 * h5py==3.9.0
 * hnswlib==0.7.0
@@ -22,7 +22,7 @@ Please refer to this [page](https://maskgraphene-tutorial.readthedocs.io/en/late
 * scanpy==1.9.1
 * umap-learn==0.5.4
 * wandb
-* pyyaml == 5.4.1
+* pyyaml==5.4.1
 
 <h2>Installation</h2>
 
