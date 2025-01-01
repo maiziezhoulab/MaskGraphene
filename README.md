@@ -48,8 +48,8 @@ pip install  dglgo -f https://data.dgl.ai/wheels-test/repo.html
 <h2>Quick Start </h2>
 
 For quick start, you could run the scripts: 
-
-<!-- **mouse Hypothalamus -0.19/-0.24 generate hard-links**
+<!-- 
+**mouse Hypothalamus -0.19/-0.24 generate hard-links**
 
 ```bash
 python ../localMG_main.py --max_epoch 3000 --max_epoch_triplet 1000 --logging False --section_ids " -0.19,-0.24" --num_class 8 --load_model False --num_hidden "512,32" 
@@ -62,8 +62,8 @@ python ../localMG_main.py --max_epoch 3000 --max_epoch_triplet 1000 --logging Fa
 ```bash
 python ../maskgraphene_main.py --max_epoch 3000 --max_epoch_triplet 1000 --logging False --section_ids " -0.19,-0.24" --num_class 8 --load_model False --num_hidden "512,32" 
                                --exp_fig_dir "./" --h5ad_save_dir "./" --st_data_dir "./" --alpha_l 3 --lam 1 --loss_fn "sce" --mask_rate 0.50 --in_drop 0 --attn_drop 0 --remask_rate 0.50
-                               --seeds 2023 --num_remasking 1 --hvgs 0 --dataset mHypothalamus --consecutive_prior 1 --lr 0.001 -->
-```
+                               --seeds 2023 --num_remasking 1 --hvgs 0 --dataset mHypothalamus --consecutive_prior 1 --lr 0.001
+``` -->
 
 **DLPFC 151507/151508 generate hard-links**
 
