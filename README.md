@@ -116,13 +116,18 @@ Open-source ST datasets information:
 
 <h2>Notebook Tutorials </h2>
 
-[Tutorial 1: hard-links generation](https://github.com/maiziezhoulab/MaskGraphene/blob/main/Tutorial%201_Hard%20link%20generation.ipynb)
+[Tutorial 1: hard-links generation](https://github.com/maiziezhoulab/MaskGraphene/blob/main/notebooks/Tutorial%201_Hard%20link%20generation.ipynb)
 
-[Tutorial 2: MaskGraphene on DLPFC](https://github.com/maiziezhoulab/MaskGraphene/blob/main/Tutorial%202_MaskGraphene%20on%20DLPFC.ipynb)
+[Tutorial 2: MaskGraphene on DLPFC](https://github.com/maiziezhoulab/MaskGraphene/blob/main/notebooks/Tutorial%202_MaskGraphene%20on%20DLPFC.ipynb)
 
-[Tutorial 3: MaskGraphene on MHypo](https://github.com/maiziezhoulab/MaskGraphene/blob/main/Tutorial%203_MaskGraphene%20on%20MHypo.ipynb)
+[Tutorial 3: MaskGraphene on MHypo](https://github.com/maiziezhoulab/MaskGraphene/blob/main/notebooks/Tutorial%203_MaskGraphene%20on%20MHypo.ipynb)
 
-[Tutorial 4: reproduction](https://github.com/maiziezhoulab/MaskGraphene/blob/main/Tutorial%204_Analyses%20reproduction.ipynb)
+[Tutorial 4: MaskGraphene on MB](https://github.com/maiziezhoulab/MaskGraphene/blob/main/notebooks/Tutorial%204_MaskGraphene%20on%20MB.ipynb)
+
+[Tutorial 5: MaskGraphene on Embryo](https://github.com/maiziezhoulab/MaskGraphene/blob/main/notebooks/Tutorial%205_MaskGraphene%20on%20Embryo.ipynb)
+
+[Tutorial 6: MaskGraphene on MB2SA&P](https://github.com/maiziezhoulab/MaskGraphene/blob/main/notebooks/Tutorial%206_MaskGraphene%20on%20MB2SAP.ipynb)
+<!-- [Tutorial 4: reproduction](https://github.com/maiziezhoulab/MaskGraphene/blob/main/Tutorial%204_Analyses%20reproduction.ipynb) -->
 
 
 <h2> Citing </h2>
