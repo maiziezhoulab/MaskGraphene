@@ -4,25 +4,20 @@ from tqdm import tqdm
 import torch
 import pickle
 import wandb
-
-from utils import (
-    build_args_ST,
-    create_optimizer,
-    set_random_seed,
-    get_current_lr,
-)
-from datasets.data_proc import load_ST_dataset
-from datasets.st_loading_utils import create_dictionary_otn, visualization_umap_spatial, create_dictionary_mnn, cal_layer_based_alignment_result, cal_layer_based_alignment_result_mhypo
-from models import build_model_ST
 import os
 import scanpy as sc
 import sklearn.metrics.pairwise
 
+from utils import (
+    build_args_ST,
+    create_optimizer,
+    set_random_seed
+)
+from datasets.data_proc import load_ST_dataset
+from datasets.st_loading_utils import visualization_umap_spatial, create_dictionary_mnn
+from models import build_model_ST
 
 
-
-
-# def train_MDOT(model, feats, graph, max_epoch, device, use_scheduler, lr, weight_decay, batch_size=512, sampling_method="lc", optimizer="adam", drop_edge_rate=0):
 def MG(model, graph, feat, optimizer, max_epoch, device, adata_concat_, scheduler, key_="MG", logger=None):
     logging.critical("start training..")
     graph = graph.to(device)
@@ -165,11 +160,8 @@ def main(args):
 
     model_dir = "checkpoints"
     os.makedirs(model_dir, exist_ok=True)
-    # print(logs)
-    
 
-    # acc_list = []
-    # estp_acc_list = []
+
     ari_1 = []
     ari_2 = []
     ari_1_pre = []

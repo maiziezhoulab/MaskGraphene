@@ -570,116 +570,6 @@ def mhypo_multi_loader(section_ids, args):
     return adj_spatial, adata_concat, cls_
 
 
-def ma_loader(section_ids, args):
-    Batch_list = []
-    adj_list = []
-    cls_ = 0
-    for section_id in section_ids:
-        ad_ = load_mMAMP(root_dir=args.st_data_dir, section_id=section_id)
-        # print(ad_)
-        ad_.X = ad_.X.toarray()
-        ad_.var_names_make_unique(join="++")
-    
-        # make spot name unique
-        ad_.obs_names = [x+'_'+section_id for x in ad_.obs_names]
-        
-        # Constructing the spatial network
-        Cal_Spatial_Net(ad_, rad_cutoff=175) # the spatial network are saved in adata.uns[‘adj’]
-
-        try:
-            cls_ = max(cls_, len(ad_.obs['original_clusters'].unique()))
-        except:
-            cls_ = cls_
-        sc.pp.highly_variable_genes(ad_, flavor="seurat_v3", n_top_genes=args.hvgs)
-        sc.pp.normalize_total(ad_, target_sum=1e4)
-        sc.pp.log1p(ad_)
-        ad_ = ad_[:, ad_.var['highly_variable']]
-
-        adj_list.append(ad_.uns['adj'])
-        Batch_list.append(ad_)
-    adata_concat = ad.concat(Batch_list, label="slice_name", keys=section_ids, uns_merge="same")
-    adata_concat.obs['original_clusters'] = adata_concat.obs['original_clusters'].astype('category')
-    adata_concat.obs["batch_name"] = adata_concat.obs["slice_name"].astype('category')
-
-    adj_spatial = np.asarray(adj_list[0].todense())
-    for batch_id in range(1,len(section_ids)):
-        adj_spatial = scipy.linalg.block_diag(adj_spatial, np.asarray(adj_list[batch_id].todense()))
-    
-
-    # non_zero_count = np.count_nonzero(adj_spatial)
-    # print(f"Number of non-zero elements in the adjacency matrix: {non_zero_count}")
-    # with open('/maiziezhou_lab/yunfei/Projects/MaskGraphene_dev0625/aligned_coord_final/MB2SAP_mapping/S.pickle', 'rb') as f:
-    #     mapping_mat = np.load(f, allow_pickle=True).toarray()
-
-    # # mapping_mat = np.argmax(mapping_mat, axis=1)
-    # for i in range(mapping_mat.shape[0]):
-    #     for j in range(mapping_mat.shape[1]):
-    #         if mapping_mat[i][j] > 0:
-    #             adj_spatial[i][j+mapping_mat.shape[0]] = 1
-    #             adj_spatial[j+mapping_mat.shape[0]][i] = 1
-
-    # # Define the tolerance as a percentage of the range (e.g., 5%)
-    # tolerance = 0.3
-
-    # # Number of nearest neighbors to link
-    # knn = 6
-
-    # # Extract spatial coordinates
-    # spatial_coords_slice1 = Batch_list[0].obsm["spatial"]
-    # spatial_coords_slice2 = Batch_list[1].obsm["spatial"]
-
-    # spatial_coords_slice2[:, 1] *= -1
-
-    # # Compute the range of y-coordinates for each slice
-    # y_range_slice1 = spatial_coords_slice1[:, 1].max() - spatial_coords_slice1[:, 1].min()
-    # y_range_slice2 = spatial_coords_slice2[:, 1].max() - spatial_coords_slice2[:, 1].min()
-
-    # # Define thresholds for the top border of slice1 and the bottom border of slice2 (using y-coordinates)
-    # right_border_threshold_slice1 = spatial_coords_slice1[:, 1].max() - tolerance * y_range_slice1
-    # left_border_threshold_slice2 = spatial_coords_slice2[:, 1].max() - tolerance * y_range_slice2
-
-    # # Select spots within the threshold from the top border of slice1 (right border for y)
-    # right_border_slice1 = spatial_coords_slice1[spatial_coords_slice1[:, 1] >= right_border_threshold_slice1]
-
-    # # Select spots within the threshold from the bottom border of slice2 (left border for y)
-    # left_border_slice2 = spatial_coords_slice2[spatial_coords_slice2[:, 1] >= left_border_threshold_slice2]
-
-    # # Compute centroids of the border spots
-    # centroid_slice1 = np.mean(right_border_slice1, axis=0)
-    # centroid_slice2 = np.mean(left_border_slice2, axis=0)
-
-    # # Compute scaling factor based on the ratio of the y-range of the two slices
-    # scaling_factor = y_range_slice1 / y_range_slice2
-
-    # # Compute translation needed to align the centroids
-    # translation_vector = centroid_slice1 - centroid_slice2 * scaling_factor
-
-    # # Apply the transformation to all spots in slice2
-    # transformed_left_border_slice2 = (left_border_slice2 * scaling_factor) + translation_vector
-
-    # # Proceed with the KNN connection as before
-    # knn_model = NearestNeighbors(n_neighbors=knn)
-    # knn_model.fit(transformed_left_border_slice2)
-    # distances, indices = knn_model.kneighbors(right_border_slice1)
-
-    # # Update adj_spatial to add connections between right border of slice1 and left border of slice2
-    # slice1_num_spots = Batch_list[0].shape[0]  # Number of spots in slice1
-    # for i, neighbors in enumerate(indices):
-    #     for neighbor in neighbors:
-    #         # Add a connection between the i-th spot in right_border_slice1 and the corresponding neighbor in left_border_slice2
-    #         spot1_index = np.where((spatial_coords_slice1 == right_border_slice1[i]).all(axis=1))[0][0]
-    #         spot2_index = slice1_num_spots + np.where((spatial_coords_slice2 == left_border_slice2[neighbor]).all(axis=1))[0][0]
-
-    #         # Update adjacency matrix adj_spatial
-    #         adj_spatial[spot1_index, spot2_index] = 1
-    #         adj_spatial[spot2_index, spot1_index] = 1
-    
-    # non_zero_count = np.count_nonzero(adj_spatial)
-    # print(f"Number of non-zero elements in the adjacency matrix: {non_zero_count}")
-
-    return adj_spatial, adata_concat, cls_
-
-
 # def ma_loader(section_ids, args):
 #     Batch_list = []
 #     adj_list = []
@@ -694,32 +584,20 @@ def ma_loader(section_ids, args):
 #         ad_.obs_names = [x+'_'+section_id for x in ad_.obs_names]
         
 #         # Constructing the spatial network
-#         Cal_Spatial_Net(ad_, rad_cutoff=150) # the spatial network are saved in adata.uns[‘adj’]
-        
-#         # Normalization
-#         # ground_truth
+#         Cal_Spatial_Net(ad_, rad_cutoff=175) # the spatial network are saved in adata.uns[‘adj’]
+
 #         try:
 #             cls_ = max(cls_, len(ad_.obs['original_clusters'].unique()))
 #         except:
 #             cls_ = cls_
-        
-#         adj_list.append(ad_.uns['adj'])
-#         Batch_list.append(ad_)
-
-#     with open('/maiziezhou_lab/yunfei/Projects/MaskGraphene_dev0625/aligned_coord_final/MB2SAP_mapping/S.pickle', 'rb') as f:
-#         mapping_mat = np.load(f, allow_pickle=True).toarray()
-#         mapping_mat_argmax = np.argmax(mapping_mat, axis=1)
-#     Batch_list[0], Batch_list[1] = simple_impute(Batch_list[0], Batch_list[1], mapping_mat_argmax)
-
-#     Batch_list_new = []
-#     for ad_ in Batch_list:
 #         sc.pp.highly_variable_genes(ad_, flavor="seurat_v3", n_top_genes=args.hvgs)
 #         sc.pp.normalize_total(ad_, target_sum=1e4)
 #         sc.pp.log1p(ad_)
 #         ad_ = ad_[:, ad_.var['highly_variable']]
-#         Batch_list_new.append(ad_)
-    
-#     adata_concat = ad.concat(Batch_list_new, label="slice_name", keys=section_ids, uns_merge="same")
+
+#         adj_list.append(ad_.uns['adj'])
+#         Batch_list.append(ad_)
+#     adata_concat = ad.concat(Batch_list, label="slice_name", keys=section_ids, uns_merge="same")
 #     adata_concat.obs['original_clusters'] = adata_concat.obs['original_clusters'].astype('category')
 #     adata_concat.obs["batch_name"] = adata_concat.obs["slice_name"].astype('category')
 
@@ -727,15 +605,137 @@ def ma_loader(section_ids, args):
 #     for batch_id in range(1,len(section_ids)):
 #         adj_spatial = scipy.linalg.block_diag(adj_spatial, np.asarray(adj_list[batch_id].todense()))
     
-#     # mapping_mat = np.argmax(mapping_mat, axis=1)
-#     for i in range(mapping_mat.shape[0]):
-#         for j in range(mapping_mat.shape[1]):
-#             if mapping_mat[i][j] > 0:
-#                 adj_spatial[i][j+mapping_mat.shape[0]] = 1
-#                 adj_spatial[j+mapping_mat.shape[0]][i] = 1
+
+#     # non_zero_count = np.count_nonzero(adj_spatial)
+#     # print(f"Number of non-zero elements in the adjacency matrix: {non_zero_count}")
+#     # with open('/maiziezhou_lab/yunfei/Projects/MaskGraphene_dev0625/aligned_coord_final/MB2SAP_mapping/S.pickle', 'rb') as f:
+#     #     mapping_mat = np.load(f, allow_pickle=True).toarray()
+
+#     # # mapping_mat = np.argmax(mapping_mat, axis=1)
+#     # for i in range(mapping_mat.shape[0]):
+#     #     for j in range(mapping_mat.shape[1]):
+#     #         if mapping_mat[i][j] > 0:
+#     #             adj_spatial[i][j+mapping_mat.shape[0]] = 1
+#     #             adj_spatial[j+mapping_mat.shape[0]][i] = 1
+
+#     # # Define the tolerance as a percentage of the range (e.g., 5%)
+#     # tolerance = 0.3
+
+#     # # Number of nearest neighbors to link
+#     # knn = 6
+
+#     # # Extract spatial coordinates
+#     # spatial_coords_slice1 = Batch_list[0].obsm["spatial"]
+#     # spatial_coords_slice2 = Batch_list[1].obsm["spatial"]
+
+#     # spatial_coords_slice2[:, 1] *= -1
+
+#     # # Compute the range of y-coordinates for each slice
+#     # y_range_slice1 = spatial_coords_slice1[:, 1].max() - spatial_coords_slice1[:, 1].min()
+#     # y_range_slice2 = spatial_coords_slice2[:, 1].max() - spatial_coords_slice2[:, 1].min()
+
+#     # # Define thresholds for the top border of slice1 and the bottom border of slice2 (using y-coordinates)
+#     # right_border_threshold_slice1 = spatial_coords_slice1[:, 1].max() - tolerance * y_range_slice1
+#     # left_border_threshold_slice2 = spatial_coords_slice2[:, 1].max() - tolerance * y_range_slice2
+
+#     # # Select spots within the threshold from the top border of slice1 (right border for y)
+#     # right_border_slice1 = spatial_coords_slice1[spatial_coords_slice1[:, 1] >= right_border_threshold_slice1]
+
+#     # # Select spots within the threshold from the bottom border of slice2 (left border for y)
+#     # left_border_slice2 = spatial_coords_slice2[spatial_coords_slice2[:, 1] >= left_border_threshold_slice2]
+
+#     # # Compute centroids of the border spots
+#     # centroid_slice1 = np.mean(right_border_slice1, axis=0)
+#     # centroid_slice2 = np.mean(left_border_slice2, axis=0)
+
+#     # # Compute scaling factor based on the ratio of the y-range of the two slices
+#     # scaling_factor = y_range_slice1 / y_range_slice2
+
+#     # # Compute translation needed to align the centroids
+#     # translation_vector = centroid_slice1 - centroid_slice2 * scaling_factor
+
+#     # # Apply the transformation to all spots in slice2
+#     # transformed_left_border_slice2 = (left_border_slice2 * scaling_factor) + translation_vector
+
+#     # # Proceed with the KNN connection as before
+#     # knn_model = NearestNeighbors(n_neighbors=knn)
+#     # knn_model.fit(transformed_left_border_slice2)
+#     # distances, indices = knn_model.kneighbors(right_border_slice1)
+
+#     # # Update adj_spatial to add connections between right border of slice1 and left border of slice2
+#     # slice1_num_spots = Batch_list[0].shape[0]  # Number of spots in slice1
+#     # for i, neighbors in enumerate(indices):
+#     #     for neighbor in neighbors:
+#     #         # Add a connection between the i-th spot in right_border_slice1 and the corresponding neighbor in left_border_slice2
+#     #         spot1_index = np.where((spatial_coords_slice1 == right_border_slice1[i]).all(axis=1))[0][0]
+#     #         spot2_index = slice1_num_spots + np.where((spatial_coords_slice2 == left_border_slice2[neighbor]).all(axis=1))[0][0]
+
+#     #         # Update adjacency matrix adj_spatial
+#     #         adj_spatial[spot1_index, spot2_index] = 1
+#     #         adj_spatial[spot2_index, spot1_index] = 1
     
-    
+#     # non_zero_count = np.count_nonzero(adj_spatial)
+#     # print(f"Number of non-zero elements in the adjacency matrix: {non_zero_count}")
+
 #     return adj_spatial, adata_concat, cls_
+
+
+def ma_loader(section_ids, args):
+    Batch_list = []
+    adj_list = []
+    cls_ = 0
+    for section_id in section_ids:
+        ad_ = load_mMAMP(root_dir=args.st_data_dir, section_id=section_id)
+        # print(ad_)
+        ad_.X = ad_.X.toarray()
+        ad_.var_names_make_unique(join="++")
+    
+        # make spot name unique
+        ad_.obs_names = [x+'_'+section_id for x in ad_.obs_names]
+        
+        # Constructing the spatial network
+        Cal_Spatial_Net(ad_, rad_cutoff=150) # the spatial network are saved in adata.uns[‘adj’]
+        
+        # Normalization
+        # ground_truth
+        try:
+            cls_ = max(cls_, len(ad_.obs['original_clusters'].unique()))
+        except:
+            cls_ = cls_
+        
+        adj_list.append(ad_.uns['adj'])
+        Batch_list.append(ad_)
+
+    with open('/maiziezhou_lab/yunfei/Projects/MaskGraphene_dev0625/aligned_coord_final/MB2SAP_mapping/S.pickle', 'rb') as f:
+        mapping_mat = np.load(f, allow_pickle=True).toarray()
+        mapping_mat_argmax = np.argmax(mapping_mat, axis=1)
+    Batch_list[0], Batch_list[1] = simple_impute(Batch_list[0], Batch_list[1], mapping_mat_argmax)
+
+    Batch_list_new = []
+    for ad_ in Batch_list:
+        sc.pp.highly_variable_genes(ad_, flavor="seurat_v3", n_top_genes=args.hvgs)
+        sc.pp.normalize_total(ad_, target_sum=1e4)
+        sc.pp.log1p(ad_)
+        ad_ = ad_[:, ad_.var['highly_variable']]
+        Batch_list_new.append(ad_)
+    
+    adata_concat = ad.concat(Batch_list_new, label="slice_name", keys=section_ids, uns_merge="same")
+    adata_concat.obs['original_clusters'] = adata_concat.obs['original_clusters'].astype('category')
+    adata_concat.obs["batch_name"] = adata_concat.obs["slice_name"].astype('category')
+
+    adj_spatial = np.asarray(adj_list[0].todense())
+    for batch_id in range(1,len(section_ids)):
+        adj_spatial = scipy.linalg.block_diag(adj_spatial, np.asarray(adj_list[batch_id].todense()))
+    
+    # mapping_mat = np.argmax(mapping_mat, axis=1)
+    for i in range(mapping_mat.shape[0]):
+        for j in range(mapping_mat.shape[1]):
+            if mapping_mat[i][j] > 0:
+                adj_spatial[i][j+mapping_mat.shape[0]] = 1
+                adj_spatial[j+mapping_mat.shape[0]][i] = 1
+    
+    
+    return adj_spatial, adata_concat, cls_
 
 
 def embryo_loader(section_ids, args):

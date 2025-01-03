@@ -436,63 +436,48 @@ def localMG(args):
         # print(f"####### Run {i} for seed {seed}")
         set_random_seed(seed)
         
+        graph, num_features, ad_concat = local_alignment_loader(section_ids=section_ids, hvgs=args.hvgs, st_data_dir=st_data_dir, sim_dir=sim_dir, dataname=dataset_name, hard_links=None)
+        args.num_features = num_features
+        # print(args)
+        model_local_ot = build_model_ST(args)
+        # print(model_local_ot)
+        model_local_ot.to(device)
+        optimizer = create_optimizer(optim_type, model_local_ot, lr, weight_decay)
+
+        if use_scheduler:
+            logging.info("Use scheduler")
+            scheduler = lambda epoch :( 1 + np.cos((epoch) * np.pi / max_epoch) ) * 0.5
+            scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=scheduler)
+        else:
+            scheduler = None
         
-        if is_consecutive == 1:
-            if hard_link_dir != None:
-                if "mg" in hard_link_dir:
-                    
-                    file_path = osp.join(hard_link_dir, ROUND, dataset_name+section_ids[0]+'_'+section_ids[1], "S.pickle")
-                    with open(file_path, 'rb') as file:
-                        alignment=pickle.load(file)
-                        alignment = alignment.toarray()
-                else:
-                    m_Name = os.path.basename(hard_link_dir)
-                    file_name = section_ids[0]+'and'+section_ids[1] +'_round'+ROUND+'_alpha'+str(alpha_value)
-                    alignment=np.load(osp.join(hard_link_dir, ROUND, file_name+"_"+m_Name+"_AlignmentPi.npy"))
-                graph, num_features, ad_concat = local_alignment_loader(section_ids=section_ids, hvgs=args.hvgs, st_data_dir=st_data_dir, sim_dir=sim_dir, dataname=dataset_name, hard_links=alignment)
-            else:
-                graph, num_features, ad_concat = local_alignment_loader(section_ids=section_ids, hvgs=args.hvgs, st_data_dir=st_data_dir, sim_dir=sim_dir, dataname=dataset_name, hard_links=None)
-            args.num_features = num_features
-            print(args)
-            model_local_ot = build_model_ST(args)
-            print(model_local_ot)
-            model_local_ot.to(device)
-            optimizer = create_optimizer(optim_type, model_local_ot, lr, weight_decay)
+        batchlist_, ad_concaT = run_mask_graphene_aligner(graph, model_local_ot, device, ad_concat, section_ids, max_epoch=max_epoch, max_epoch_triplet=max_epoch_triplet, optimizer=optimizer, scheduler=scheduler, logger=logger, num_class=num_layers, use_mnn=True)
 
-            if use_scheduler:
-                logging.info("Use scheduler")
-                scheduler = lambda epoch :( 1 + np.cos((epoch) * np.pi / max_epoch) ) * 0.5
-                scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=scheduler)
-            else:
-                scheduler = None
-            
-            batchlist_, ad_concaT = run_mask_graphene_aligner(graph, model_local_ot, device, ad_concat, section_ids, max_epoch=max_epoch, max_epoch_triplet=max_epoch_triplet, optimizer=optimizer, scheduler=scheduler, logger=logger, num_class=num_layers, use_mnn=True)
+        slice1 = batchlist_[0]
+        slice2 = batchlist_[1]
 
-            slice1 = batchlist_[0]
-            slice2 = batchlist_[1]
-
-            global_PI = np.zeros((len(slice1.obs.index), len(slice2.obs.index)))
-            slice1_idx_mapping = {}
-            slice2_idx_mapping = {}
-            for i in range(len(slice1.obs.index)):
-                slice1_idx_mapping[slice1.obs.index[i]] = i
-            for i in range(len(slice2.obs.index)):
-                slice2_idx_mapping[slice2.obs.index[i]] = i
-            
-            for i in range(num_layers):
-                print("run for cluster:", i)
-                subslice1 = slice1[slice1.obs['mclust']==i+1]
-                subslice2 = slice2[slice2.obs['mclust']==i+1]
-                if subslice1.shape[0]>0 and subslice2.shape[0]>0:
-                    if subslice1.shape[0]>1 and subslice2.shape[0]>1: 
-                        pi00 = paste.match_spots_using_spatial_heuristic(subslice1.obsm['spatial'], subslice2.obsm['spatial'], use_ot=True)
-                        local_PI = paste.pairwise_align(subslice1, subslice2, alpha=alpha_value, dissimilarity='kl', use_rep=None, norm=True, verbose=True, G_init=pi00, use_gpu = True, backend = ot.backend.TorchBackend())
-                    else:  # if there is only one spot in a slice, spatial dissimilarity can't be normalized
-                        local_PI = paste.pairwise_align(subslice1, subslice2, alpha=alpha_value, dissimilarity='kl', use_rep=None, norm=False, verbose=True, G_init=None, use_gpu = True, backend = ot.backend.TorchBackend())
-                    for ii in range(local_PI.shape[0]):
-                        for jj in range(local_PI.shape[1]):
-                            global_PI[slice1_idx_mapping[subslice1.obs.index[ii]]][slice2_idx_mapping[subslice2.obs.index[jj]]] = local_PI[ii][jj]
-                            # cluster_matrix[slice1_idx_mapping[subslice1.obs.index[ii]]][slice2_idx_mapping[subslice2.obs.index[jj]]] = i
+        global_PI = np.zeros((len(slice1.obs.index), len(slice2.obs.index)))
+        slice1_idx_mapping = {}
+        slice2_idx_mapping = {}
+        for i in range(len(slice1.obs.index)):
+            slice1_idx_mapping[slice1.obs.index[i]] = i
+        for i in range(len(slice2.obs.index)):
+            slice2_idx_mapping[slice2.obs.index[i]] = i
+        
+        for i in range(num_layers):
+            print("run for cluster:", i)
+            subslice1 = slice1[slice1.obs['mclust']==i+1]
+            subslice2 = slice2[slice2.obs['mclust']==i+1]
+            if subslice1.shape[0]>0 and subslice2.shape[0]>0:
+                if subslice1.shape[0]>1 and subslice2.shape[0]>1: 
+                    pi00 = paste.match_spots_using_spatial_heuristic(subslice1.obsm['spatial'], subslice2.obsm['spatial'], use_ot=True)
+                    local_PI = paste.pairwise_align(subslice1, subslice2, alpha=alpha_value, dissimilarity='kl', use_rep=None, norm=True, verbose=True, G_init=pi00, use_gpu = True, backend = ot.backend.TorchBackend())
+                else:  # if there is only one spot in a slice, spatial dissimilarity can't be normalized
+                    local_PI = paste.pairwise_align(subslice1, subslice2, alpha=alpha_value, dissimilarity='kl', use_rep=None, norm=False, verbose=True, G_init=None, use_gpu = True, backend = ot.backend.TorchBackend())
+                for ii in range(local_PI.shape[0]):
+                    for jj in range(local_PI.shape[1]):
+                        global_PI[slice1_idx_mapping[subslice1.obs.index[ii]]][slice2_idx_mapping[subslice2.obs.index[jj]]] = local_PI[ii][jj]
+                        # cluster_matrix[slice1_idx_mapping[subslice1.obs.index[ii]]][slice2_idx_mapping[subslice2.obs.index[jj]]] = i
         else:
             return None
 
@@ -501,6 +486,14 @@ def localMG(args):
     file = open(os.path.join(exp_fig_dir, file_name+"_HL.pickle"),'wb')
     pickle.dump(S, file)
 
+
+    new_slices = paste.stack_slices_pairwise(batchlist_, S)
+    for i,L in enumerate(new_slices):
+        spatial_data = L.obsm['spatial']
+
+        output_path = os.path.join(exp_fig_dir, f"coordinates_{section_ids[i]}.csv")
+        pd.DataFrame(spatial_data).to_csv(output_path, index=False)
+        print(f"Saved spatial data for slice {i} to {output_path}")
     # file_name = section_ids[0]+'_'+section_ids[1] +'_a'+str(alpha_value)
     # file2 = open(os.path.join(exp_fig_dir, file_name+"_Cluster_matrix.pickle"),'wb')
     # S2 = scipy.sparse.csr_matrix(cluster_matrix)
