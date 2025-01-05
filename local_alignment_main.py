@@ -27,7 +27,7 @@ from datasets.data_proc import Cal_Spatial_Net
 from models import build_model_ST
 
 
-def local_alignment_loader(section_ids=["151507", "151508"], dataname="DLPFC", hvgs=5000, st_data_dir="./", sim_dir = "./", hard_links=None):
+def local_alignment_loader(section_ids=["151507", "151508"], dataname="DLPFC", hvgs=5000, st_data_dir="./", sim_dir = "./"):
     print("name:", dataname)
     # hard links is a mapping matrix (2d numpy array with the size of #slice1 spot by #slice2 spot)
     if dataname == "DLPFC":
@@ -59,15 +59,6 @@ def local_alignment_loader(section_ids=["151507", "151508"], dataname="DLPFC", h
         adj_concat = np.asarray(adj_list[0].todense())
         for batch_id in range(1,len(section_ids)):
             adj_concat = scipy.linalg.block_diag(adj_concat, np.asarray(adj_list[batch_id].todense()))
-        
-        """if hard links is not empty"""
-        print("hard link", hard_links)
-        if hard_links is not None:
-            for i in range(hard_links.shape[0]):
-                for j in range(hard_links.shape[1]):
-                    if hard_links[i][j] > 0:
-                        adj_concat[i][j+hard_links.shape[0]] = 1
-                        adj_concat[j+hard_links.shape[0]][i] = 1
 
         edgeList = np.nonzero(adj_concat)
         graph = dgl.graph((edgeList[0], edgeList[1]))
@@ -99,14 +90,6 @@ def local_alignment_loader(section_ids=["151507", "151508"], dataname="DLPFC", h
         adj_concat = np.asarray(adj_list[0].todense())
         for batch_id in range(1,len(section_ids)):
             adj_concat = scipy.linalg.block_diag(adj_concat, np.asarray(adj_list[batch_id].todense()))
-        
-        """if hard links is not empty"""
-        if hard_links != None:
-            for i in range(hard_links.shape[0]):
-                for j in range(hard_links.shape[1]):
-                    if hard_links[i][j] > 0:
-                        adj_concat[i][j+hard_links.shape[0]] = 1
-                        adj_concat[j+hard_links.shape[0]][i] = 1
 
         edgeList = np.nonzero(adj_concat)
         graph = dgl.graph((edgeList[0], edgeList[1]))
@@ -238,15 +221,6 @@ def local_alignment_loader(section_ids=["151507", "151508"], dataname="DLPFC", h
         adj_concat = np.asarray(adj_list[0].todense())
         for batch_id in range(1,len(section_ids)):
             adj_concat = scipy.linalg.block_diag(adj_concat, np.asarray(adj_list[batch_id].todense()))
-        
-        """if hard links is not empty"""
-        print("hard link", hard_links)
-        if hard_links is not None:
-            for i in range(hard_links.shape[0]):
-                for j in range(hard_links.shape[1]):
-                    if hard_links[i][j] > 0:
-                        adj_concat[i][j+hard_links.shape[0]] = 1
-                        adj_concat[j+hard_links.shape[0]][i] = 1
 
         edgeList = np.nonzero(adj_concat)
         graph = dgl.graph((edgeList[0], edgeList[1]))
@@ -257,7 +231,7 @@ def local_alignment_loader(section_ids=["151507", "151508"], dataname="DLPFC", h
     return graph, num_features, adata_concat
 
 
-def run_mask_graphene_aligner(graph, model, device, ad_concat, section_ids, max_epoch, max_epoch_triplet, optimizer, scheduler, logger, num_class, use_mnn=False):
+def run_local_alignment(graph, model, device, ad_concat, section_ids, max_epoch, max_epoch_triplet, optimizer, scheduler, logger, num_class, use_mnn=False):
     x = graph.ndata["feat"]
     model.to(device)
     graph = graph.to(device)
@@ -406,7 +380,7 @@ def localMG(args):
     max_epoch_triplet = args.max_epoch_triplet
     num_hidden = args.num_hidden
     #original: num_layers = args.num_layers
-    num_layers = args.num_class
+    num_class = args.num_class
 
     encoder_type = args.encoder
     decoder_type = args.decoder
@@ -421,7 +395,6 @@ def localMG(args):
     logger = None
     use_scheduler = args.scheduler
 
-    """mid files save path"""
     exp_fig_dir = args.exp_fig_dir
     st_data_dir = args.st_data_dir
 
@@ -451,7 +424,7 @@ def localMG(args):
         else:
             scheduler = None
         
-        batchlist_, ad_concaT = run_mask_graphene_aligner(graph, model_local_ot, device, ad_concat, section_ids, max_epoch=max_epoch, max_epoch_triplet=max_epoch_triplet, optimizer=optimizer, scheduler=scheduler, logger=logger, num_class=num_layers, use_mnn=True)
+        batchlist_, ad_concaT = run_local_alignment(graph, model_local_ot, device, ad_concat, section_ids, max_epoch=max_epoch, max_epoch_triplet=max_epoch_triplet, optimizer=optimizer, scheduler=scheduler, logger=logger, num_class=num_class, use_mnn=True)
 
         slice1 = batchlist_[0]
         slice2 = batchlist_[1]
@@ -464,7 +437,7 @@ def localMG(args):
         for i in range(len(slice2.obs.index)):
             slice2_idx_mapping[slice2.obs.index[i]] = i
         
-        for i in range(num_layers):
+        for i in range(num_class):
             print("run for cluster:", i)
             subslice1 = slice1[slice1.obs['mclust']==i+1]
             subslice2 = slice2[slice2.obs['mclust']==i+1]
@@ -482,12 +455,12 @@ def localMG(args):
             return None
 
     file_name = section_ids[0]+'_'+section_ids[1] +'_'+str(alpha_value)
-    S = scipy.sparse.csr_matrix(global_PI)
+    mapping_mat = scipy.sparse.csr_matrix(global_PI)
     file = open(os.path.join(exp_fig_dir, file_name+"_HL.pickle"),'wb')
-    pickle.dump(S, file)
+    pickle.dump(mapping_mat, file)
 
 
-    new_slices = paste.stack_slices_pairwise(batchlist_, S)
+    new_slices = paste.stack_slices_pairwise(batchlist_, mapping_mat)
     for i,L in enumerate(new_slices):
         spatial_data = L.obsm['spatial']
 

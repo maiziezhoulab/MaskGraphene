@@ -190,7 +190,7 @@ class GATConv(nn.Module):
             self.fc_dst = nn.Linear(
                 self._in_dst_feats, out_feats * num_heads, bias=False)
         else:
-            print(self._in_src_feats, out_feats, num_heads)
+            # print(self._in_src_feats, out_feats, num_heads)
             self.fc = nn.Linear(
                 self._in_src_feats, out_feats * num_heads, bias=False)
         self.attn_l = nn.Parameter(torch.FloatTensor(size=(1, num_heads, out_feats)))

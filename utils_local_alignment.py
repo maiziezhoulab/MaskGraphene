@@ -45,85 +45,6 @@ def get_current_lr(optimizer):
     return optimizer.state_dict()["param_groups"][0]["lr"]
 
 
-def build_args():
-    parser = argparse.ArgumentParser(description="GAT")
-    parser.add_argument("--seeds", type=int, nargs="+", default=[0])
-    parser.add_argument("--dataset", type=str, default="cora")
-    parser.add_argument("--device", type=int, default=0)
-    parser.add_argument("--max_epoch", type=int, default=500,
-                        help="number of training epochs")
-    parser.add_argument("--warmup_steps", type=int, default=-1)
-
-    parser.add_argument("--num_heads", type=int, default=4,
-                        help="number of hidden attention heads")
-    parser.add_argument("--num_out_heads", type=int, default=1,
-                        help="number of output attention heads")
-    parser.add_argument("--num_layers", type=int, default=2,
-                        help="number of hidden layers")
-    parser.add_argument("--num_dec_layers", type=int, default=1)
-    parser.add_argument("--num_remasking", type=int, default=3)    
-    parser.add_argument("--num_hidden", type=int, default=512,
-                        help="number of hidden units")
-    parser.add_argument("--residual", action="store_true", default=False,
-                        help="use residual connection")
-    parser.add_argument("--in_drop", type=float, default=.2,
-                        help="input feature dropout")
-    parser.add_argument("--attn_drop", type=float, default=.1,
-                        help="attention dropout")
-    parser.add_argument("--norm", type=str, default=None)
-    parser.add_argument("--lr", type=float, default=0.001,
-                        help="learning rate")
-    parser.add_argument("--weight_decay", type=float, default=0,
-                        help="weight decay")
-    parser.add_argument("--negative_slope", type=float, default=0.2,
-                        help="the negative slope of leaky relu")
-    parser.add_argument("--activation", type=str, default="prelu")
-    parser.add_argument("--mask_rate", type=float, default=0.5)
-    parser.add_argument("--remask_rate", type=float, default=0.5)
-    parser.add_argument("--remask_method", type=str, default="random")
-    parser.add_argument("--mask_type", type=str, default="mask",
-                        help="`mask` or `drop`")
-    parser.add_argument("--mask_method", type=str, default="random")
-    parser.add_argument("--drop_edge_rate", type=float, default=0.0)
-    parser.add_argument("--drop_edge_rate_f", type=float, default=0.0)
-
-    parser.add_argument("--encoder", type=str, default="gat")
-    parser.add_argument("--decoder", type=str, default="gat")
-    parser.add_argument("--loss_fn", type=str, default="sce")
-    parser.add_argument("--alpha_l", type=float, default=2)
-    parser.add_argument("--optimizer", type=str, default="adam")
-    
-    parser.add_argument("--max_epoch_f", type=int, default=300)
-    parser.add_argument("--lr_f", type=float, default=0.01)
-    parser.add_argument("--weight_decay_f", type=float, default=0.0)
-    parser.add_argument("--linear_prob", action="store_true", default=False)
-
-    
-    parser.add_argument("--no_pretrain", action="store_true")
-    parser.add_argument("--load_model", action="store_true")
-    parser.add_argument("--checkpoint_path", type=str, default=None)
-    parser.add_argument("--use_cfg", action="store_true")
-    parser.add_argument("--logging", action="store_true")
-    parser.add_argument("--scheduler", action="store_true", default=False)
-
-    parser.add_argument("--batch_size", type=int, default=256)
-    parser.add_argument("--batch_size_f", type=int, default=128)
-    parser.add_argument("--sampling_method", type=str, default="saint", help="sampling method, `lc` or `saint`")
-
-    parser.add_argument("--label_rate", type=float, default=1.0)
-    parser.add_argument("--ego_graph_file_path", type=str, default=None)
-    parser.add_argument("--data_dir", type=str, default="data")
-
-    parser.add_argument("--lam", type=float, default=1.0)
-    parser.add_argument("--full_graph_forward", action="store_true", default=False)
-    parser.add_argument("--delayed_ema_epoch", type=int, default=0)
-    parser.add_argument("--replace_rate", type=float, default=0.0)
-    parser.add_argument("--momentum", type=float, default=0.996)
-
-    args = parser.parse_args()
-    return args
-
-
 def build_args_ST():
     parser = argparse.ArgumentParser(description="GAT")
     parser.add_argument("--seeds", type=int, nargs="+", default=[0])
@@ -144,7 +65,7 @@ def build_args_ST():
     parser.add_argument("--num_class", type=int, default=7)
     parser.add_argument("--hvgs", type=int, default=7000)
         
-    parser.add_argument("--device", type=int, default=3)
+    parser.add_argument("--device", type=int, default=0)
     parser.add_argument("--max_epoch", type=int, default=500,
                         help="number of training epochs")
     parser.add_argument("--max_epoch_triplet", type=int, default=500,
@@ -205,14 +126,18 @@ def build_args_ST():
     parser.add_argument("--label_rate", type=float, default=1.0)
 
     parser.add_argument("--lam", type=float, default=1.0)  # mixing coeff in latent with recon balancing
-    parser.add_argument("--full_graph_forward", action="store_true", default=False)
+    # parser.add_argument("--full_graph_forward", action="store_true", default=False)
     parser.add_argument("--delayed_ema_epoch", type=int, default=0)
     parser.add_argument("--replace_rate", type=float, default=0.0)
     parser.add_argument("--momentum", type=float, default=0.996)
 
     parser.add_argument("--load_model", default=False)
 
-    args = parser.parse_args()
+    # Filter out unwanted arguments
+    args, unknown = parser.parse_known_args()
+    
+    # print("Known arguments:", args)
+    # print("Unknown arguments:", unknown)
     return args
         
     
