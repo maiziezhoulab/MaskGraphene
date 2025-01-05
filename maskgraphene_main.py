@@ -161,11 +161,10 @@ def main(args):
     model_dir = "checkpoints"
     os.makedirs(model_dir, exist_ok=True)
 
-
-    ari_1 = []
-    ari_2 = []
-    ari_1_pre = []
-    ari_2_pre = []
+    # ari_1 = []
+    # ari_2 = []
+    # ari_1_pre = []
+    # ari_2_pre = []
     if not os.path.exists(os.path.join(exp_fig_dir, dataset_name+'_'.join(section_ids))):
         os.makedirs(os.path.join(exp_fig_dir, dataset_name+'_'.join(section_ids)))
 
@@ -178,9 +177,7 @@ def main(args):
         set_random_seed(seed)
 
         if logs:
-            # logger = WandbLogger(log_path=f"{dataset_name}_{'_'.join(section_ids)}_loss_{loss_fn}_rpr_{replace_rate}_nh_{num_hidden}_nl_{num_layers}_lr_{lr}_mp_{max_epoch}__wd_{weight_decay}__{encoder_type}_{decoder_type}", project="M-DOT", args=args)
             logger = wandb.init(name='_'.join(section_ids)+"_seed"+str(seed))
-            # logger = TBLogger(name=f"{dataset_name}_loss_{loss_fn}_rpr_{replace_rate}_nh_{num_hidden}_nl_{num_layers}_lr_{lr}_mp_{max_epoch}__wd_{weight_decay}__{encoder_type}_{decoder_type}")
         else:
             logger = None
 
@@ -210,34 +207,14 @@ def main(args):
         x = x.to(device)
         # print(ad_concat[0])
         model, ad_concat_1 = MG(model, graph, x, optimizer, max_epoch, device, ad_concat, scheduler, logger=logger, key_="MG")
-        # print(ad_concat_1)
-        # print(ad_concat_1.obsm["MG"])
-        ari_ = visualization_umap_spatial(ad_temp=ad_concat_1, section_ids=section_ids, exp_fig_dir=exp_fig_dir, dataset_name=dataset_name, num_iter=counter, identifier="stage1", num_class=args.num_class, use_key="MG")
-        # ari_1_pre.append(ari_[0])
-        # ari_2_pre.append(ari_[1])
-        if logger is not None:
-            logger.log({"slice1_ari_pre": ari_[0], "slice2_ari_pre": ari_[1]})
-        # print(section_id)
-        for i in range(len(section_ids)):
-            print(section_ids[i], ', ARI = %01.3f' % ari_[i])
-            # print(section_ids[1], ', ARI = %01.3f' % ari_[1])
-            logging.critical(section_ids[i] + "_ari_pre :" + str(ari_[i]))
-        # exit(-1)
-        """train with MSSL + triplet loss"""
-        logging.critical("Keep training Model with cse + triplet loss ")
-
         model, ad_concat_2 = MG_triplet(model, graph, x, optimizer, max_epoch_triplet, device, adata_concat_=ad_concat_1, scheduler=scheduler, logger=logger, key_="MG_triplet")
         ari_ = visualization_umap_spatial(ad_temp=ad_concat_2, section_ids=section_ids, exp_fig_dir=exp_fig_dir, dataset_name=dataset_name, num_iter=counter, identifier="stage2", num_class=args.num_class, use_key="MG_triplet")
         counter += 1
-        # ari_1.append(ari_[0])
-        # ari_2.append(ari_[1])
         if logger is not None:
             logger.log({"slice1_ari_after": ari_[0], "slice2_ari_after": ari_[1]})
         for i in range(len(section_ids)):
             print(section_ids[i], ', ARI = %01.3f' % ari_[i])
             logging.critical(section_ids[i] + "_ari_after :" + str(ari_[i]))
-        # for i in range(len(section_ids)):
-        #     print(section_ids[i], ', ARI = %01.3f' % ari_[i])
         
         if logger is not None:
             logger.finish()

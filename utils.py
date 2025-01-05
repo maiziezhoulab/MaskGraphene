@@ -361,16 +361,12 @@ def build_args_ST():
     parser = argparse.ArgumentParser(description="GAT")
     parser.add_argument("--seeds", type=int, nargs="+", default=[0])
     parser.add_argument("--dataset", type=str, default="DLPFC")
-    parser.add_argument("--exp_fig_dir", type=str, default="./")
-    parser.add_argument("--h5ad_save_dir", type=str, default="./")
     parser.add_argument("--st_data_dir", type=str, default="./")
-    parser.add_argument("--mapping_mat", type=str, default="./")
-
-    parser.add_argument("--consecutive_prior", type=int, default=0)
+    parser.add_argument("--hl_dir", type=str, default="./")
 
     parser.add_argument("--section_ids", type=str, help="a list of slice name strings sep by comma, with no spacing")
     parser.add_argument("--num_class", type=int, default=7)
-    parser.add_argument("--hvgs", type=int, default=7000)
+    parser.add_argument("--hvgs", type=int, default=5000)
         
     parser.add_argument("--device", type=int, default=2)
     parser.add_argument("--max_epoch", type=int, default=500,
@@ -381,8 +377,6 @@ def build_args_ST():
 
     parser.add_argument("--num_heads", type=int, default=1,
                         help="number of hidden attention heads")
-    parser.add_argument("--align_coord", type=str, default="./aligned_coord",
-                        help="Aligned coordination of ST dataset")
     parser.add_argument("--num_out_heads", type=int, default=1,
                         help="number of output attention heads")
     parser.add_argument("--num_layers", type=int, default=2,

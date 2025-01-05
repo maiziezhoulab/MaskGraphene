@@ -127,7 +127,6 @@ Open-source ST datasets information:
 [Tutorial 5: MaskGraphene on Embryo](https://github.com/maiziezhoulab/MaskGraphene/blob/main/notebooks/Tutorial%205_MaskGraphene%20on%20Embryo.ipynb)
 
 [Tutorial 6: MaskGraphene on MB2SA&P](https://github.com/maiziezhoulab/MaskGraphene/blob/main/notebooks/Tutorial%206_MaskGraphene%20on%20MB2SAP.ipynb)
-<!-- [Tutorial 4: reproduction](https://github.com/maiziezhoulab/MaskGraphene/blob/main/Tutorial%204_Analyses%20reproduction.ipynb) -->
 
 
 <h2> Citing </h2>

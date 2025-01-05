@@ -327,14 +327,13 @@ def non_zero_intersection(array1, array2):
 
 def dlpfc_loader(section_ids, args):
     Batch_list_new = []
-
     cls_ = 0
     for section_id in section_ids:
         ad_ = load_DLPFC(root_dir=args.st_data_dir, section_id=section_id)
         ad_.var_names_make_unique(join="++")
 
         
-        align_coord = pd.read_csv(os.path.join('/maiziezhou_lab/yunfei/Projects/MaskGraphene_dev0625/aligned_coord_final/DLPFC', 'refined_coordinates_{}.csv'.format(section_id)), index_col=0)
+        align_coord = pd.read_csv(os.path.join(args.hl_dir, 'refined_coordinates_{}.csv'.format(section_id)), index_col=0)
         ad_.obsm['spatial'] = align_coord.values
         cls_ = max(cls_, len(ad_.obs['original_clusters'].unique()))
 
@@ -346,15 +345,11 @@ def dlpfc_loader(section_ids, args):
     adata_concat.obs['original_clusters'] = adata_concat.obs['original_clusters'].astype('category')
     adata_concat.obs["batch_name"] = adata_concat.obs["slice_name"].astype('category')
 
-    # align_coord = pd.read_csv(os.path.join('/maiziezhou_lab/yunfei/Projects/MaskGraphene_dev0625/aligned_coord_localOT/DLPFC', 'coor_{}and{}_round1_alpha0.1.csv'.format(section_ids[0], section_ids[1])), index_col=0)
-    # adata_concat.obsm['spatial'] = align_coord.values
-
     adj_spatial = get_adjacency_matrix(adata_concat.obsm['spatial'], k=10, metric='euclidean')
 
     adata_concat.X = fill_missing_features(adata_concat.X.toarray(), adj_spatial)
-    # print(non_zero_rate(adata_concat.X))
 
-    sc.pp.highly_variable_genes(adata_concat, flavor="seurat_v3", n_top_genes=5000)
+    sc.pp.highly_variable_genes(adata_concat, flavor="seurat_v3", n_top_genes=args.hvgs)
     sc.pp.normalize_total(adata_concat, target_sum=1e4)
     sc.pp.log1p(adata_concat)
     adata_concat = adata_concat[:, adata_concat.var['highly_variable']]
@@ -363,26 +358,16 @@ def dlpfc_loader(section_ids, args):
 
 
 def dlpfc_multi_loader(section_ids, args):
-    # 151507and151508_round1_alpha0.1_localOt_kl_iniPI_paste1_AlignmentPi.npy
-    # dir_ = "/maiziezhou_lab/yunfei/Projects/MaskGraphene_dev0625/aligned_coord_localOT/DLPFC_mapping/"
-
     Batch_list_new = []
-
     cls_ = 0
     for section_id in section_ids:
         ad_ = load_DLPFC(root_dir=args.st_data_dir, section_id=section_id)
         ad_.var_names_make_unique(join="++")
-
-        
-        align_coord = pd.read_csv(os.path.join('/maiziezhou_lab/yunfei/Projects/MaskGraphene_dev0625/aligned_coord_final/DLPFC', 'refined_coordinates_{}.csv'.format(section_id)), index_col=0)
+        align_coord = pd.read_csv(os.path.join(args.hl_dir, 'refined_coordinates_{}.csv'.format(section_id)), index_col=0)
         ad_.obsm['spatial'] = align_coord.values
         cls_ = max(cls_, len(ad_.obs['original_clusters'].unique()))
-
         ad_.obs_names = [x + '_' + section_id for x in ad_.obs_names]
         Batch_list_new.append(ad_)
-        # print(align_coord.values)
-
-    # mapping_mat_list = []
 
     adata_concat = anndata.concat(Batch_list_new, label="slice_name", keys=section_ids, uns_merge="same")
     adata_concat.obs['original_clusters'] = adata_concat.obs['original_clusters'].astype('category')
@@ -391,9 +376,8 @@ def dlpfc_multi_loader(section_ids, args):
     adj_spatial = get_adjacency_matrix(adata_concat.obsm['spatial'], k=15, metric='euclidean')
 
     adata_concat.X = fill_missing_features(adata_concat.X.toarray(), adj_spatial)
-    # print(non_zero_rate(adata_concat.X))
 
-    sc.pp.highly_variable_genes(adata_concat, flavor="seurat_v3", n_top_genes=5000)
+    sc.pp.highly_variable_genes(adata_concat, flavor="seurat_v3", n_top_genes=args.hvgs)
     sc.pp.normalize_total(adata_concat, target_sum=1e4)
     sc.pp.log1p(adata_concat)
     adata_concat = adata_concat[:, adata_concat.var['highly_variable']]
