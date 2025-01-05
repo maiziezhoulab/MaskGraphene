@@ -620,10 +620,10 @@ def visualization_umap_spatial(ad_temp, section_ids, exp_fig_dir, dataset_name, 
     section_color_dict = dict(zip(section_ids, section_color))
     ad_temp.uns['batch_name_colors'] = [section_color_dict[x] for x in ad_temp.obs.batch_name.cat.categories]
 
-    fig = sc.pl.umap(ad_temp, color=['batch_name', 'original_clusters', 'mclust'], ncols=3, wspace=0.5,
-                     return_fig=True)
-    fig.tight_layout()  # Adjust subplots to prevent overlap
-    fig.savefig(os.path.join(exp_fig_dir, dataset_name + '_'.join(section_ids) + str(num_iter) + identifier + "_umap.pdf"))
+    # fig = sc.pl.umap(ad_temp, color=['batch_name', 'original_clusters', 'mclust'], ncols=3, wspace=0.5,
+    #                  return_fig=True)
+    # fig.tight_layout()  # Adjust subplots to prevent overlap
+    # fig.savefig(os.path.join(exp_fig_dir, dataset_name + '_'.join(section_ids) + str(num_iter) + identifier + "_umap.pdf"))
 
     """visualization"""
     if dataset_name == "MHypo":

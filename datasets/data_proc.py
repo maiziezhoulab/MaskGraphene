@@ -26,7 +26,7 @@ from sklearn.metrics.pairwise import pairwise_distances
 import sklearn
 from scipy.spatial.distance import cdist
 ST_DICT = {
-    "DLPFC", "BC", "MHypo", "MB2SAP", "Embryo", "DLPFC_sim", "merfishMB"
+    "DLPFC", "BC", "MHypo", "MB2SAP", "Embryo", "DLPFC_sim", "MB"
 }
 
         
@@ -389,30 +389,12 @@ def mhypo_loader(section_ids, args):
     Batch_list = []
     cls_ = 0
     adj_list = []
-    # for section_id in section_ids:
-    #     ad_ = load_mHypothalamus(root_dir=args.st_data_dir, section_id=section_id)
-    #     ad_.var_names_make_unique(join="++")
-    
-    #     # make spot name unique
-    #     ad_.obs_names = [x+'_'+section_id for x in ad_.obs_names]
-        
-    #     # Constructing the spatial network
-    #     Cal_Spatial_Net(ad_, rad_cutoff=35) # the spatial network are saved in adata.uns[‘adj’]
-        
-    #     # Normalization
-    #     sc.pp.normalize_total(ad_, target_sum=1e4)
-    #     sc.pp.log1p(ad_)
-
-    #     adj_list.append(ad_.uns['adj'])
-    #     Batch_list.append(ad_)
     for section_id in section_ids:
         ad_ = load_mHypothalamus(root_dir=args.st_data_dir, section_id=section_id)
         ad_.var_names_make_unique(join="++")
 
         
-        align_coord = pd.read_csv(os.path.join('/maiziezhou_lab/yunfei/Projects/MaskGraphene_dev0625/aligned_coord_final/MHypo', 'refined_coordinates_{}.csv'.format(section_id)), index_col=0)
-        # print(ad_.shape)
-        # print(align_coord.shape)
+        align_coord = pd.read_csv(os.path.join(args.hl_dir, 'refined_coordinates_{}.csv'.format(section_id)), index_col=0)
         ad_.obsm['spatial'] = align_coord.values
         cls_ = max(cls_, len(ad_.obs['original_clusters'].unique()))
         Cal_Spatial_Net(ad_, rad_cutoff=35) # the spatial network are saved in adata.uns[‘adj’]
@@ -474,15 +456,12 @@ def mhypo_multi_loader(section_ids, args):
         ad_.var_names_make_unique(join="++")
 
         
-        align_coord = pd.read_csv(os.path.join('/maiziezhou_lab/yunfei/Projects/MaskGraphene_dev0625/aligned_coord_final/MHypo', 'refined_coordinates_{}.csv'.format(section_id)), index_col=0)
+        align_coord = pd.read_csv(os.path.join(args.hl_dir, 'refined_coordinates_{}.csv'.format(section_id)), index_col=0)
         ad_.obsm['spatial'] = align_coord.values
         cls_ = max(cls_, len(ad_.obs['original_clusters'].unique()))
 
         ad_.obs_names = [x + '_' + section_id for x in ad_.obs_names]
         Batch_list_new.append(ad_)
-        # print(align_coord.values)
-
-    # mapping_mat_list = []
 
     adata_concat = anndata.concat(Batch_list_new, label="slice_name", keys=section_ids, uns_merge="same")
     adata_concat.obs['original_clusters'] = adata_concat.obs['original_clusters'].astype('category')
@@ -490,125 +469,42 @@ def mhypo_multi_loader(section_ids, args):
 
     adj_spatial = get_adjacency_matrix(adata_concat.obsm['spatial'], k=15, metric='euclidean')
 
-    # adata_concat.X = fill_missing_features(adata_concat.X, adj_spatial)
-    # print(non_zero_rate(adata_concat.X))
-
-    # sc.pp.highly_variable_genes(adata_concat, flavor="seurat_v3", n_top_genes=5000)
     sc.pp.normalize_total(adata_concat, target_sum=1e4)
     sc.pp.log1p(adata_concat)
-    # adata_concat = adata_concat[:, adata_concat.var['highly_variable']]
 
     return adj_spatial, adata_concat, cls_
 
 
-# def ma_loader(section_ids, args):
-#     Batch_list = []
-#     adj_list = []
-#     cls_ = 0
-#     for section_id in section_ids:
-#         ad_ = load_mMAMP(root_dir=args.st_data_dir, section_id=section_id)
-#         # print(ad_)
-#         ad_.X = ad_.X.toarray()
-#         ad_.var_names_make_unique(join="++")
+def MB_loader(section_ids, args):
+    Batch_list = []
+    adj_list = []
+    cls_ = 0
+    for section_id in section_ids:
+        ad_ = sc.read_h5ad(os.path.join(args.st_data_dir, 'merfish_mouse_brain_slice' + str(section_id) + '.h5ad'))
+        ad_.var_names_make_unique(join="++")
     
-#         # make spot name unique
-#         ad_.obs_names = [x+'_'+section_id for x in ad_.obs_names]
-        
-#         # Constructing the spatial network
-#         Cal_Spatial_Net(ad_, rad_cutoff=175) # the spatial network are saved in adata.uns[‘adj’]
+        # make spot name unique
+        ad_.obs_names = [x+'_'+section_id for x in ad_.obs_names]
+        # print(ad_.obs)
+        # print(ad_.obs.columns)
+        cls_ = max(cls_, len(ad_.obs['spa_cluster'].unique()))
+        ad_.obs['original_clusters'] = ad_.obs['spa_cluster']
+        align_coord = pd.read_csv(os.path.join(args.hl_dir, 'refined_coordinates_{}.csv'.format(section_id)), index_col=0)
+        ad_.obsm['spatial_aligned'] = align_coord.values
 
-#         try:
-#             cls_ = max(cls_, len(ad_.obs['original_clusters'].unique()))
-#         except:
-#             cls_ = cls_
-#         sc.pp.highly_variable_genes(ad_, flavor="seurat_v3", n_top_genes=args.hvgs)
-#         sc.pp.normalize_total(ad_, target_sum=1e4)
-#         sc.pp.log1p(ad_)
-#         ad_ = ad_[:, ad_.var['highly_variable']]
+        # Normalization
+        sc.pp.normalize_total(ad_, target_sum=1e4)
+        sc.pp.log1p(ad_)
 
-#         adj_list.append(ad_.uns['adj'])
-#         Batch_list.append(ad_)
-#     adata_concat = ad.concat(Batch_list, label="slice_name", keys=section_ids, uns_merge="same")
-#     adata_concat.obs['original_clusters'] = adata_concat.obs['original_clusters'].astype('category')
-#     adata_concat.obs["batch_name"] = adata_concat.obs["slice_name"].astype('category')
-
-#     adj_spatial = np.asarray(adj_list[0].todense())
-#     for batch_id in range(1,len(section_ids)):
-#         adj_spatial = scipy.linalg.block_diag(adj_spatial, np.asarray(adj_list[batch_id].todense()))
+        Batch_list.append(ad_)
     
+    adata_concat = ad.concat(Batch_list, label="slice_name", keys=section_ids, uns_merge="same")
+    adata_concat.obs["batch_name"] = adata_concat.obs["slice_name"].astype('category')
 
-#     # non_zero_count = np.count_nonzero(adj_spatial)
-#     # print(f"Number of non-zero elements in the adjacency matrix: {non_zero_count}")
-#     # with open('/maiziezhou_lab/yunfei/Projects/MaskGraphene_dev0625/aligned_coord_final/MB2SAP_mapping/S.pickle', 'rb') as f:
-#     #     mapping_mat = np.load(f, allow_pickle=True).toarray()
-
-#     # # mapping_mat = np.argmax(mapping_mat, axis=1)
-#     # for i in range(mapping_mat.shape[0]):
-#     #     for j in range(mapping_mat.shape[1]):
-#     #         if mapping_mat[i][j] > 0:
-#     #             adj_spatial[i][j+mapping_mat.shape[0]] = 1
-#     #             adj_spatial[j+mapping_mat.shape[0]][i] = 1
-
-#     # # Define the tolerance as a percentage of the range (e.g., 5%)
-#     # tolerance = 0.3
-
-#     # # Number of nearest neighbors to link
-#     # knn = 6
-
-#     # # Extract spatial coordinates
-#     # spatial_coords_slice1 = Batch_list[0].obsm["spatial"]
-#     # spatial_coords_slice2 = Batch_list[1].obsm["spatial"]
-
-#     # spatial_coords_slice2[:, 1] *= -1
-
-#     # # Compute the range of y-coordinates for each slice
-#     # y_range_slice1 = spatial_coords_slice1[:, 1].max() - spatial_coords_slice1[:, 1].min()
-#     # y_range_slice2 = spatial_coords_slice2[:, 1].max() - spatial_coords_slice2[:, 1].min()
-
-#     # # Define thresholds for the top border of slice1 and the bottom border of slice2 (using y-coordinates)
-#     # right_border_threshold_slice1 = spatial_coords_slice1[:, 1].max() - tolerance * y_range_slice1
-#     # left_border_threshold_slice2 = spatial_coords_slice2[:, 1].max() - tolerance * y_range_slice2
-
-#     # # Select spots within the threshold from the top border of slice1 (right border for y)
-#     # right_border_slice1 = spatial_coords_slice1[spatial_coords_slice1[:, 1] >= right_border_threshold_slice1]
-
-#     # # Select spots within the threshold from the bottom border of slice2 (left border for y)
-#     # left_border_slice2 = spatial_coords_slice2[spatial_coords_slice2[:, 1] >= left_border_threshold_slice2]
-
-#     # # Compute centroids of the border spots
-#     # centroid_slice1 = np.mean(right_border_slice1, axis=0)
-#     # centroid_slice2 = np.mean(left_border_slice2, axis=0)
-
-#     # # Compute scaling factor based on the ratio of the y-range of the two slices
-#     # scaling_factor = y_range_slice1 / y_range_slice2
-
-#     # # Compute translation needed to align the centroids
-#     # translation_vector = centroid_slice1 - centroid_slice2 * scaling_factor
-
-#     # # Apply the transformation to all spots in slice2
-#     # transformed_left_border_slice2 = (left_border_slice2 * scaling_factor) + translation_vector
-
-#     # # Proceed with the KNN connection as before
-#     # knn_model = NearestNeighbors(n_neighbors=knn)
-#     # knn_model.fit(transformed_left_border_slice2)
-#     # distances, indices = knn_model.kneighbors(right_border_slice1)
-
-#     # # Update adj_spatial to add connections between right border of slice1 and left border of slice2
-#     # slice1_num_spots = Batch_list[0].shape[0]  # Number of spots in slice1
-#     # for i, neighbors in enumerate(indices):
-#     #     for neighbor in neighbors:
-#     #         # Add a connection between the i-th spot in right_border_slice1 and the corresponding neighbor in left_border_slice2
-#     #         spot1_index = np.where((spatial_coords_slice1 == right_border_slice1[i]).all(axis=1))[0][0]
-#     #         spot2_index = slice1_num_spots + np.where((spatial_coords_slice2 == left_border_slice2[neighbor]).all(axis=1))[0][0]
-
-#     #         # Update adjacency matrix adj_spatial
-#     #         adj_spatial[spot1_index, spot2_index] = 1
-#     #         adj_spatial[spot2_index, spot1_index] = 1
+    adj_spatial = get_adjacency_matrix(adata_concat.obsm['spatial_aligned'], k=10, metric='euclidean')
     
-#     # non_zero_count = np.count_nonzero(adj_spatial)
-#     # print(f"Number of non-zero elements in the adjacency matrix: {non_zero_count}")
+    return adj_spatial, adata_concat, cls_
 
-#     return adj_spatial, adata_concat, cls_
 
 
 def ma_loader(section_ids, args):
@@ -734,107 +630,6 @@ def embryo_loader(section_ids, args):
     sc.pp.log1p(adata_concat)
     adata_concat = adata_concat[:, adata_concat.var['highly_variable']]
     
-    
-    return adj_spatial, adata_concat, cls_
-
-
-def embryo_multi_loader(section_ids, args):
-    # /home/yunfei/spatial_benchmarking/benchmarking_data/Embryo
-    Batch_list = []
-    adj_list = []
-    cls_ = 0
-    print(section_ids)
-
-    # Load and process each slice
-    for section_id in section_ids:
-        ad_ = sc.read_h5ad(os.path.join(args.st_data_dir, section_id))
-        ad_.var_names_make_unique(join="++")
-        ad_.obs_names = [x+'_'+section_id for x in ad_.obs_names]
-
-        # Update cls_ to track the maximum number of unique clusters
-        cls_ = max(cls_, len(ad_.obs['annotation'].unique()))
-        ad_.obs['original_clusters'] = ad_.obs['annotation']
-        ad_.obs['x'] = ad_.obsm['spatial'].T[0]
-        ad_.obs['y'] = ad_.obsm['spatial'].T[1]
-
-        Batch_list.append(ad_)
-
-    # Now we propagate the transformations backward, starting from the last slice (slice 3)
-    for i in range(2, -1, -1):  # i = 2 -> slice 2 to 3, i = 1 -> slice 1 to 2, i = 0 -> slice 0 to 1
-        id1_ = section_ids[i].split("_")[0][1:]  # Slice i
-        id2_ = section_ids[i+1].split("_")[0][1:]  # Next slice (i+1)
-
-        # Load the corresponding mapping matrix
-        mapping_mat = np.load(os.path.join(
-            '/maiziezhou_lab/yunfei/Projects/MaskGraphene_dev0625/aligned_coord_localOT/Embryo_mapping',
-            id1_ + 'and' + id2_ + '_round1_alpha0.1_localOt_kl_iniPI_paste1_AlignmentPi.npy'
-        ))
-        print(f"Mapping matrix {i+1} shape:", mapping_mat.shape)
-
-        # Find the best matches for each slice and transform coordinates
-        best_matches = np.argmax(mapping_mat, axis=1)
-        mapped_coords = Batch_list[i+1].obsm['spatial'][best_matches]  # Map to the next slice (i+1)
-
-        # Update the spatial coordinates of the current slice (slice i)
-        Batch_list[i].obsm['spatial'] = mapped_coords
-
-    # Concatenate all the batches after transforming their coordinates
-    adata_concat = ad.concat(Batch_list, label="slice_name", keys=section_ids, uns_merge="same")
-    adata_concat.obs["batch_name"] = adata_concat.obs["slice_name"].astype('category')
-
-    # Build the spatial adjacency matrix
-    adj_spatial = get_adjacency_matrix_effi(adata_concat.obsm['spatial'], k=12, metric='euclidean')
-
-    # Fill missing features
-    adata_concat.X = fill_missing_features(adata_concat.X.toarray(), adj_spatial)
-
-    # Preprocess the concatenated data
-    sc.pp.highly_variable_genes(adata_concat, flavor="seurat_v3", n_top_genes=args.hvgs)
-    sc.pp.normalize_total(adata_concat, target_sum=1e4)
-    sc.pp.log1p(adata_concat)
-    adata_concat = adata_concat[:, adata_concat.var['highly_variable']]
-
-    return adj_spatial, adata_concat, cls_
-
-
-def merfishMB_loader(section_ids, args):
-    # /home/yunfei/spatial_benchmarking/benchmarking_data/Embryo
-    Batch_list = []
-    adj_list = []
-    cls_ = 0
-    for section_id in section_ids:
-        ad_ = sc.read_h5ad(os.path.join(args.st_data_dir, 'merfish_mouse_brain_slice' + str(section_id) + '.h5ad'))
-        ad_.var_names_make_unique(join="++")
-    
-        # make spot name unique
-        ad_.obs_names = [x+'_'+section_id for x in ad_.obs_names]
-        # print(ad_.obs)
-        # print(ad_.obs.columns)
-        cls_ = max(cls_, len(ad_.obs['spa_cluster'].unique()))
-        ad_.obs['original_clusters'] = ad_.obs['spa_cluster']
-        ad_.obs['x'] = ad_.obsm['spatial_aligned']['X']
-        ad_.obs['y'] = ad_.obsm['spatial_aligned']['Y']
-
-        # Normalization
-        sc.pp.normalize_total(ad_, target_sum=1e4)
-        sc.pp.log1p(ad_)
-
-        Batch_list.append(ad_)
-    
-    mapping_mat = None
-
-    adata_concat = ad.concat(Batch_list, label="slice_name", keys=section_ids, uns_merge="same")
-    # adata_concat.obs['original_clusters'] = adata_concat.obs['original_clusters'].astype('category')
-    adata_concat.obs["batch_name"] = adata_concat.obs["slice_name"].astype('category')
-
-    adj_spatial = get_adjacency_matrix(adata_concat.obsm['spatial_aligned'], k=9, metric='euclidean')
-
-    # adata_concat.X = fill_missing_features(adata_concat.X.toarray(), adj_spatial)
-    # adata_concat.X = fill_extreme_features(adata_concat.X, adj_spatial)
-    # print(non_zero_rate(adata_concat.X))
-
-    # sc.pp.normalize_total(adata_concat, target_sum=1e4)
-    # sc.pp.log1p(adata_concat)
     
     return adj_spatial, adata_concat, cls_
 
@@ -980,9 +775,9 @@ def load_ST_dataset(dataset_name, section_ids=["151507", "151508"], args_=None):
         edgeList = np.nonzero(adj_concat)
         graph = dgl.graph((edgeList[0], edgeList[1]))
         graph.ndata["feat"] = torch.tensor(adata_concat.X).float()
-    elif dataset_name == "merfishMB":
+    elif dataset_name == "MB":
         if len(section_ids) == 10:
-            adj_concat, adata_concat, num_classes = merfishMB_loader(section_ids, args_)
+            adj_concat, adata_concat, num_classes = MB_loader(section_ids, args_)
         else:
             print("invalid slice number")
             exit(-10)
