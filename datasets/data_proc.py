@@ -475,6 +475,58 @@ def mhypo_multi_loader(section_ids, args):
     return adj_spatial, adata_concat, cls_
 
 
+# def MB_loader(section_ids, args):
+#     Batch_list = []
+#     adj_list = []
+#     cls_ = 0
+#     for section_id in section_ids:
+#         ad_ = sc.read_h5ad(os.path.join(args.st_data_dir, 'merfish_mouse_brain_slice' + str(section_id) + '.h5ad'))
+#         ad_.var_names_make_unique(join="++")
+    
+#         # make spot name unique
+#         ad_.obs_names = [x+'_'+section_id for x in ad_.obs_names]
+#         # print(ad_.obs)
+#         # print(ad_.obs.columns)
+#         cls_ = max(cls_, len(ad_.obs['spa_cluster'].unique()))
+#         ad_.obs['original_clusters'] = ad_.obs['spa_cluster']
+#         align_coord = pd.read_csv(os.path.join(args.hl_dir, 'refined_coordinates_{}.csv'.format(section_id)), index_col=0)
+#         ad_.obsm['spatial_aligned'] = align_coord.values
+
+#         # Normalization
+#         sc.pp.normalize_total(ad_, target_sum=1e4)
+#         sc.pp.log1p(ad_)
+
+#         Batch_list.append(ad_)
+    
+#     adata_concat = ad.concat(Batch_list, label="slice_name", keys=section_ids, uns_merge="same")
+#     adata_concat.obs["batch_name"] = adata_concat.obs["slice_name"].astype('category')
+
+#     adj_spatial = get_adjacency_matrix(adata_concat.obsm['spatial_aligned'], k=10, metric='euclidean')
+    
+#     return adj_spatial, adata_concat, cls_
+
+
+def transform_coords(slices, mapping_matrices, obsm_name):
+
+    assert len(slices) == len(mapping_matrices) + 1
+
+    for slice_idx in range(len(mapping_matrices)):
+        # Start with the coordinates of the current slice
+        # coords = slices[slice_idx].obsm[obsm_name]  # Assuming 'spatial_aligned' stores coordinates
+
+        # Cascade through the mapping matrices
+        for i in range(len(mapping_matrices)-1, slice_idx-1, -1):  # Apply mapping matrices sequentially
+            mapping_mat = mapping_matrices[i]
+            # print(mapping_mat.shape)
+            best_matches = np.argmax(mapping_mat, axis=1)  # Find best matches
+            coords = slices[i + 1].obsm[obsm_name][best_matches]  # Map coordinates to the next slice
+            # print(coords.shape)
+        # Update the spatial coordinates of the current slice
+        slices[slice_idx].obsm[obsm_name] = coords
+
+    return slices
+
+
 def MB_loader(section_ids, args):
     Batch_list = []
     adj_list = []
@@ -489,8 +541,8 @@ def MB_loader(section_ids, args):
         # print(ad_.obs.columns)
         cls_ = max(cls_, len(ad_.obs['spa_cluster'].unique()))
         ad_.obs['original_clusters'] = ad_.obs['spa_cluster']
-        align_coord = pd.read_csv(os.path.join(args.hl_dir, 'refined_coordinates_{}.csv'.format(section_id)), index_col=0)
-        ad_.obsm['spatial_aligned'] = align_coord.values
+
+        ad_.obsm['spatial'] = ad_.obsm['spatial'][['X','Y']].to_numpy()
 
         # Normalization
         sc.pp.normalize_total(ad_, target_sum=1e4)
@@ -498,13 +550,22 @@ def MB_loader(section_ids, args):
 
         Batch_list.append(ad_)
     
+    mapping_matrices = []
+    for i in range(len(section_ids)-1):
+        with open(os.path.join(args.hl_dir, str(i)+'_'+str(i+1)+'_HL.pickle'), 'rb') as f:
+            # print(i)
+            mapping_mat = np.load(f, allow_pickle=True).toarray()
+            mapping_matrices.append(mapping_mat)
+    
+    Batch_list = transform_coords(Batch_list, mapping_matrices, obsm_name='spatial')
+    # print(Batch_list)
+    
     adata_concat = ad.concat(Batch_list, label="slice_name", keys=section_ids, uns_merge="same")
     adata_concat.obs["batch_name"] = adata_concat.obs["slice_name"].astype('category')
 
-    adj_spatial = get_adjacency_matrix(adata_concat.obsm['spatial_aligned'], k=10, metric='euclidean')
+    adj_spatial = get_adjacency_matrix(adata_concat.obsm['spatial_aligned'], k=30, metric='euclidean')
     
     return adj_spatial, adata_concat, cls_
-
 
 
 def ma_loader(section_ids, args):
@@ -602,17 +663,8 @@ def embryo_loader(section_ids, args):
     id2_ = section_ids[1].split("_")[0][1:]
     print(id1_, id2_)
     mapping_mat = np.load(os.path.join('/maiziezhou_lab/yunfei/Projects/MaskGraphene_dev0625/aligned_coord_localOT/Embryo_mapping', id1_ + 'and' + id2_ + '_round1_alpha0.1_localOt_kl_iniPI_paste1_AlignmentPi.npy'.format(section_ids[1].split(".")[0])))
-    print(mapping_mat.shape)
-    # for i in range(mapping_mat.shape[0]):
-    #     for j in range(mapping_mat.shape[1]):
-    #         if mapping_mat[i][j] > 0:
-    #             adj_spatial[i][j+mapping_mat.shape[0]] = 1
-    #             adj_spatial[j+mapping_mat.shape[0]][i] = 1
     best_matches = np.argmax(mapping_mat, axis=1)
-    # Replace each coordinate in spatial_coords1 with the corresponding coordinate in spatial_coords2
-    # Batch_list[0].obsm['spatial_ori'] = Batch_list[0].obsm['spatial']
     mapped_coords1 = Batch_list[1].obsm['spatial'][best_matches]
-    # Update the original obsm with the mapped coordinates
     Batch_list[0].obsm['spatial'] = mapped_coords1
 
     adata_concat = ad.concat(Batch_list, label="slice_name", keys=section_ids, uns_merge="same")
@@ -717,7 +769,7 @@ def load_ST_dataset(dataset_name, section_ids=["151507", "151508"], args_=None):
             exit(-10)
         edgeList = np.nonzero(adj_concat)
         graph = dgl.graph((edgeList[0], edgeList[1]))
-        print(adata_concat.X.shape)
+        # print(adata_concat.X.shape)
         graph.ndata["feat"] = torch.tensor(adata_concat.X)
 
     elif "BC" in dataset_name:
@@ -776,11 +828,11 @@ def load_ST_dataset(dataset_name, section_ids=["151507", "151508"], args_=None):
         graph = dgl.graph((edgeList[0], edgeList[1]))
         graph.ndata["feat"] = torch.tensor(adata_concat.X).float()
     elif dataset_name == "MB":
-        if len(section_ids) == 10:
-            adj_concat, adata_concat, num_classes = MB_loader(section_ids, args_)
-        else:
-            print("invalid slice number")
-            exit(-10)
+        # if len(section_ids) == 10:
+        adj_concat, adata_concat, num_classes = MB_loader(section_ids, args_)
+        # else:
+        #     print("invalid slice number")
+        #     exit(-10)
         
         edgeList = np.nonzero(adj_concat)
         graph = dgl.graph((edgeList[0], edgeList[1]))

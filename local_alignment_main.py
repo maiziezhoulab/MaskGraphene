@@ -15,6 +15,7 @@ import os
 import pickle
 import scanpy as sc
 from sklearn.metrics import adjusted_rand_score as ari_score
+from sklearn.metrics.pairwise import pairwise_distances
 from utils_local_alignment import (
     build_args_ST,
     create_optimizer,
@@ -25,6 +26,22 @@ from datasets.st_loading_utils import mclust_R
 from datasets.st_loading_utils import load_DLPFC, create_dictionary_mnn, load_mHypothalamus, load_embryo, load_mMAMP
 from datasets.data_proc import Cal_Spatial_Net
 from models import build_model_ST
+
+
+def get_adjacency_matrix(A, k=6, metric='euclidean'):
+    # Calculate pairwise distances
+    distances = pairwise_distances(A, metric=metric)
+
+    # Initialize adjacency matrix
+    n_samples = A.shape[0]
+    adjacency_matrix = np.zeros((n_samples, n_samples))
+
+    # Find k nearest neighbors
+    for i in range(n_samples):
+        indices = np.argsort(distances[i])[1:k+1]  # Exclude the sample itself
+        adjacency_matrix[i, indices] = 1
+
+    return adjacency_matrix
 
 
 def local_alignment_loader(section_ids=["151507", "151508"], dataname="DLPFC", hvgs=5000, st_data_dir="./", sim_dir = "./"):
@@ -131,7 +148,6 @@ def local_alignment_loader(section_ids=["151507", "151508"], dataname="DLPFC", h
         graph.ndata["feat"] = torch.tensor(adata_concat.X.todense())
         num_features = graph.ndata["feat"].shape[1]
     
-    # fei added on 11/28/23
     elif dataname == "DLPFC_sim":
         Batch_list = []
         adj_list = []
@@ -225,6 +241,39 @@ def local_alignment_loader(section_ids=["151507", "151508"], dataname="DLPFC", h
         edgeList = np.nonzero(adj_concat)
         graph = dgl.graph((edgeList[0], edgeList[1]))
         graph.ndata["feat"] = torch.tensor(adata_concat.X.todense())
+        num_features = graph.ndata["feat"].shape[1]
+    elif dataname == "MB":
+        Batch_list = []
+        adj_list = []
+        for section_id in section_ids:
+            ad_ = sc.read_h5ad(os.path.join(st_data_dir, 'merfish_mouse_brain_slice' + str(section_id) + '.h5ad'))
+            ad_.var_names_make_unique(join="++")
+        
+            # make spot name unique
+            ad_.obs_names = [x+'_'+section_id for x in ad_.obs_names]
+            # print(ad_.obs)
+            # print(ad_.obs.columns)
+            ad_.obs['original_clusters'] = ad_.obs['spa_cluster']
+            d_.obsm['spatial'] = ad_.obsm['spatial'][['X', 'Y']]
+            # Constructing the spatial network
+            Cal_Spatial_Net(ad_, rad_cutoff=40) # the spatial network are saved in adata.uns[‘adj’]
+
+            # Normalization
+            sc.pp.normalize_total(ad_, target_sum=1e4)
+            sc.pp.log1p(ad_)
+
+            Batch_list.append(ad_)
+        
+        adata_concat = ad.concat(Batch_list, label="slice_name", keys=section_ids, uns_merge="same")
+        adata_concat.obs["batch_name"] = adata_concat.obs["slice_name"].astype('category')
+
+        adj_concat = np.asarray(adj_list[0].todense())
+        for batch_id in range(1,len(section_ids)):
+            adj_concat = scipy.linalg.block_diag(adj_concat, np.asarray(adj_list[batch_id].todense()))
+
+        edgeList = np.nonzero(adj_concat)
+        graph = dgl.graph((edgeList[0], edgeList[1]))
+        graph.ndata["feat"] = torch.tensor(adata_concat.X)
         num_features = graph.ndata["feat"].shape[1]
     else:
         raise NotImplementedError
@@ -451,8 +500,8 @@ def localMG(args):
                     for jj in range(local_PI.shape[1]):
                         global_PI[slice1_idx_mapping[subslice1.obs.index[ii]]][slice2_idx_mapping[subslice2.obs.index[jj]]] = local_PI[ii][jj]
                         # cluster_matrix[slice1_idx_mapping[subslice1.obs.index[ii]]][slice2_idx_mapping[subslice2.obs.index[jj]]] = i
-        else:
-            return None
+            else:
+                return None
 
     file_name = section_ids[0]+'_'+section_ids[1] +'_'+str(alpha_value)
     mapping_mat = scipy.sparse.csr_matrix(global_PI)

@@ -663,7 +663,10 @@ def visualization_umap_spatial(ad_temp, section_ids, exp_fig_dir, dataset_name, 
         fig, ax = plt.subplots(1, 2*len(section_ids), figsize=(10*len(section_ids), 10))  # gridspec_kw={'wspace': 0.05, 'hspace': 0.1}
         for i in range(len(section_ids)):
             if dataset_name == 'merfishMB':
-                Batch_list[i].obsm['spatial'] = Batch_list[i].obsm['spatial'][['X', 'Y']].to_numpy()
+                try:
+                    Batch_list[i].obsm['spatial'] = Batch_list[i].obsm['spatial'][['X', 'Y']].to_numpy()
+                except:
+                    Batch_list[i].obsm['spatial'] = Batch_list[i].obsm['spatial']
             else:
                 pass
             _sc_0 = sc.pl.spatial(Batch_list[i], img_key=None, color=['mclust'], title=[''],
