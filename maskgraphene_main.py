@@ -155,7 +155,7 @@ def main(args):
     section_ids = args.section_ids.lstrip().split(",")
     # print(section_ids)
     """file save path"""
-    exp_fig_dir = args.exp_fig_dir
+    exp_fig_dir = './notebooks/temp'
     # st_data_dir = args.st_data_dir
 
     model_dir = "checkpoints"

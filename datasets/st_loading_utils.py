@@ -13,8 +13,6 @@ from sklearn.metrics import adjusted_rand_score as ari_score
 import os
 import matplotlib.lines as mlines
 
-# os.environ["R_HOME"] = r"C:\\Program Files\\R\\R-4.3.1"
-# os.environ["PATH"] = r"C:\\Program Files\\R\\R-4.3.1\\bin\\x64" + ";" + os.environ["R_HOME"]
 
 plt.rcParams['figure.figsize'] = (9.0, 9.0)
 plt.rcParams['savefig.dpi'] = 300
@@ -37,26 +35,6 @@ plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 plt.rcParams['axes.facecolor'] = 'white'
 
 
-# for loading DLPFC12 data
-# def load_DLPFC(root_dir='../benchmarking_data/DLPFC12', section_id='151507'):
-#     # 151507, ..., 151676 12 in total
-#     ad = sc.read_visium(path=os.path.join(root_dir, section_id),
-#                         count_file=section_id + '_filtered_feature_bc_matrix.h5', load_images=True)
-#     ad.var_names_make_unique()
-
-#     gt_dir = os.path.join(root_dir, section_id)
-#     # gt_df = pd.read_csv(os.path.join(gt_dir, 'tissue_positions_list_GTs.txt'), sep=',', header=None, index_col=0)
-#     gt_df = pd.read_csv(os.path.join(gt_dir, section_id + '_truth.txt'), sep='\t', header=None, index_col=0)
-#     ad.obs['ground_truth'] = gt_df.loc[ad.obs_names, 1].astype('category')
-#     # ad.obs['ground_truth'] = gt_df.loc[:, 6]
-#     str_label = ad.obs['ground_truth'].cat.categories
-#     int_label_dict = {label: index for index, label in enumerate(str_label)}
-
-#     keep_bcs = ad.obs.dropna().index
-#     ad = ad[keep_bcs].copy()
-#     ad.obs['original_clusters'] = ad.obs['ground_truth'].map(int_label_dict)
-
-#     return ad
 def load_DLPFC(root_dir='../benchmarking_data/DLPFC12', section_id='151507'):
     # 151507, ..., 151676 12 in total
     ad = sc.read_visium(path=os.path.join(root_dir, section_id), count_file=section_id+'_filtered_feature_bc_matrix.h5')
@@ -69,62 +47,6 @@ def load_DLPFC(root_dir='../benchmarking_data/DLPFC12', section_id='151507'):
     ad = ad[keep_bcs].copy()
     ad.obs['original_clusters'] = ad.obs['original_clusters'].astype(int).astype(str)
     # print(ad.obs)
-    return ad
-
-
-# for loading BC data
-# cluster = 20
-def load_BC(root_dir='../benchmarking_data/BC', section_id='section1'):
-    # section1
-    ad = sc.read_visium(path=os.path.join(root_dir, section_id),
-                        count_file=section_id + '_filtered_feature_bc_matrix.h5', load_images=True)
-    ad.var_names_make_unique()
-
-    gt_dir = os.path.join(root_dir, section_id, 'gt')
-    gt_df = pd.read_csv(os.path.join(gt_dir, 'tissue_positions_list_GTs.txt'), sep=',', header=None, index_col=0)
-    ad.obs['original_clusters'] = gt_df.loc[:, 6].astype(int)
-    ad.obs['original_clusters'] += 1
-    keep_bcs = ad.obs.dropna().index
-    ad = ad[keep_bcs].copy()
-    ad.obs['original_clusters'] = ad.obs['original_clusters'].astype(int).astype(str)
-    return ad
-
-
-# for loading mouse_PFC data
-def load_mPFC(root_dir='/home/yunfei/spatial_benchmarking/benchmarking_data/STARmap_mouse_PFC',
-              section_id='20180417_BZ5_control'):
-    # section id = '20180417_BZ5_control', '20180419_BZ9_control', '20180424_BZ14_control' 3 in total
-    # cluster       4                       4                       4
-    info_file = os.path.join(root_dir, 'starmap_mpfc_starmap_info.xlsx')
-    cnts_file = os.path.join(root_dir, 'starmap_mpfc_starmap_cnts.xlsx')
-
-    xls_cnts = pd.ExcelFile(cnts_file)
-    df_cnts = pd.read_excel(xls_cnts, section_id)
-
-    xls_info = pd.ExcelFile(info_file)
-    df_info = pd.read_excel(xls_info, section_id)
-
-    spatial_X = df_info.to_numpy()
-    obs_ = df_info
-    obs_.columns = ['psuedo_barcodes', 'x', 'y', 'gt', 'original_clusters']
-    obs_.index = obs_['psuedo_barcodes'].tolist()
-
-    var_ = df_cnts.iloc[:, 0]
-    var_ = pd.DataFrame(var_)
-
-    ad = anndata.AnnData(X=df_cnts.iloc[:, 1:].T, obs=obs_, var=var_)
-    ad.obs['original_clusters'] = ad.obs['original_clusters'].astype(int).astype(str)
-    spatial = np.vstack((ad.obs['x'].to_numpy(), ad.obs['y'].to_numpy()))
-    ad.obsm['spatial'] = spatial.T
-    return ad
-
-
-# for loading mouse_visual_cortex data
-# cluster = 7
-def load_mVC(root_dir='../benchmarking_data/STARmap_mouse_visual_cortex', section_id='STARmap_20180505_BY3_1k.h5ad'):
-    ad = sc.read(os.path.join(root_dir, section_id))
-    ad.var_names_make_unique()
-    ad.obs.columns = ['Total_counts', 'imagerow', 'imagecol', 'original_clusters']
     return ad
 
 
@@ -163,61 +85,9 @@ def load_mHypothalamus(root_dir='/home/yunfei/spatial_benchmarking/benchmarking_
     return ad
 
 
-# for loading her2_tumor data
-def load_her2_tumor(root_dir='../benchmarking_data/Her2_tumor', section_id='A1'):
-    # section id = A1(348) B1(295) C1(177) D1(309) E1(587) F1(692) G2(475) H1(613) ~J1(254), 8 in total
-    # clusters =   6       5       4       4       4       4       7       7
-    cnts_dir = os.path.join(root_dir, 'ST-cnts')
-    gt_dir = os.path.join(root_dir, 'ST-pat/lbl')
-    gt_file_name = section_id + '_labeled_coordinates.tsv'
-    cnt_file_name = section_id + '.tsv'
-    cnt_df = pd.read_csv(os.path.join(cnts_dir, cnt_file_name), sep='\t', header=0)
-    # print(cnt_file_name)
-    # print(cnt_df)
-    gt_df = pd.read_csv(os.path.join(gt_dir, gt_file_name), sep='\t', header=0)
-    # print(gt_file_name)
-    # print(gt_df)
-    keep_bcs = gt_df.dropna().index
-    gt_df = gt_df.iloc[keep_bcs]
-    xs = gt_df['x'].tolist()
-    ys = gt_df['y'].tolist()
-    # print(xs)
-    # print(ys)
-    rounded_xs = [round(elem) for elem in xs]
-    # print(rounded_xs)
-    rounded_ys = [round(elem) for elem in ys]
-    # print(rounded_ys)
-
-    res = [str(i) + 'x' + str(j) for i, j in zip(rounded_xs, rounded_ys)]
-    # print(len(set(res)))
-    gt_df['Row.names'] = res
-    # print(gt_df)
-
-    spatial_X = cnt_df.to_numpy()
-    obs_ = gt_df
-    obs_ = obs_.sort_values(by=['Row.names'])
-    obs_ = obs_.loc[obs_['Row.names'].isin(cnt_df['Unnamed: 0'])]
-    obs_ = obs_.reset_index(drop=True)
-    # print(obs_)
-
-    var_ = cnt_df.iloc[0, 1:]
-    var_ = pd.DataFrame(var_)
-
-    ad = anndata.AnnData(X=cnt_df.iloc[:, 1:], obs=obs_, var=var_, dtype=np.int64)
-    ad.obs['original_clusters'] = ad.obs['label']
-    spatial = np.vstack((ad.obs['pixel_x'].to_numpy(), ad.obs['pixel_y'].to_numpy()))
-    ad.obsm['spatial'] = spatial.T
-    return ad
-
-
 # cluster = 52
 def load_mMAMP(root_dir='/home/yunfei/spatial_benchmarking/benchmarking_data/mMAMP', section_id='MA'):
-    # if section_id == "MA":
-    #     ad = sc.read_visium(path=os.path.join(root_dir, section_id), count_file=section_id+'_filtered_feature_bc_matrix.h5', load_images=True)
-    #     ad.var_names_make_unique()
-    # elif section_id == "MP":
     fn = os.path.join(root_dir, section_id, section_id + "1.h5ad")
-    # print(fn)
     ad = sc.read_h5ad(filename=fn)
     ad.var_names_make_unique()
 
@@ -235,91 +105,27 @@ def load_mMAMP(root_dir='/home/yunfei/spatial_benchmarking/benchmarking_data/mMA
         ad.obs['original_clusters'] = 'NA'
         print("no gt available")
     
-    # print(len(ad.obs['original_clusters'].unique()))
     spatial = np.vstack((ad.obs['x4'].to_numpy(), ad.obs['x5'].to_numpy()))
     ad.obsm['spatial'] = spatial.T
-    # keep_bcs = ad.obs.dropna().index
-    # ad = ad[keep_bcs].copy()
+    return ad
+
+ 
+def load_dlpfc_sim(root_dir='./', section_id=''):
+    ad = sc.read_h5ad(filename=os.path.join(root_dir, section_id + '.h5ad'))
+    ad.var_names_make_unique()
+
+    ad.obs['original_clusters'] = ad.obs['spatial_domain']
     return ad
 
 
-def dev_heart_st_loader(root_dir='/maiziezhou_lab/yunfei/Projects/spatial_benchmarking/benchmarking_data/Developmental_heart_ST', sec='FH5_1000L3_CN20_C1'):
-    # 'FH5_1000L3_CN20_C1', 'FH5_1000L3_CN20_C2', 'FH5_1000L3_CN20_D1', 'FH5_1000L3_CN20_D2', 'FH6_1000L2_CN73_E1', 
-    # 'FH6_1000L2_CN73_E2', 'FH6_1000L2_CN73_D2', 'FH6_1000L2_CN73_C2', 'FH6_1000L2_CN74_E1', 'FH6_1000L2_CN74_E2', 
-    # 'FH6_1000L2_CN74_D1', 'FH6_1000L2_CN74_D2', 'FH6_1000L2_CN74_C1', 'FH9_1000L3_CN31_C1', 'FH9_1000L3_CN31_C2', 
-    # 'FH9_1000L3_CN31_D1', 'FH9_1000L3_CN31_D2', 'FH9_1000L3_CN31_E1', 'FH9_1000L3_CN31_E2'
-    df1 = pd.read_csv(os.path.join(root_dir, 'filtered_matrix.tsv'), delimiter='\t', index_col=0)
-    df2 = pd.read_csv(os.path.join(root_dir, 'meta_data.tsv'), delimiter='\t')
-
-    # Ensure the row index of df2 matches the column index of df1
-    assert (df2.index == df1.columns).all(), "Row index of df2 must match column index of df1."
-    
-    # Get unique sample IDs from the Sample column in df2
-    unique_samples = df2['Sample'].unique()
-    
-    # Dictionary to hold AnnData objects
-    anndata_dict = {}
-
-    for sample in unique_samples:
-        # Filter df2 for the current sample
-        df2_sample = df2[df2['Sample'] == sample]
-        
-        # Get the corresponding columns from df1
-        df1_sample = df1[df2_sample.index]
-        
-        # Create an AnnData object
-        adata = anndata.AnnData(X=df1_sample.T, obs=df2_sample)
-        adata.obsm['spatial'] = adata.obs[['new_x', 'new_y']].to_numpy()
-        # Store the AnnData object in the dictionary
-        anndata_dict[sample] = adata
-    
-    return anndata_dict[sec]
-# ad = dev_heart_st_loader()
-
-
-def otn(ot_pi, names1, names2, conf_thres, mode='normal'):
-    """
-    mode = normal / argmax
-    """
-    # print(ot_pis)
-    # print(ot_pi)
-    # print(len(names1))
-    # print(len(names2))
-    # print(ot_pis.shape)
-    # print(len(ot_pis))
-    # for ot_pi in [ot_pis]:
-    #     print(ot_pi.shape)
-    assert ot_pi.shape[0] == len(names1) and ot_pi.shape[1] == len(
-        names2), "mapping matrix does not align with the given name lists"
-    # if mode == 'argmax':
-    #     print("using pi in argmax mode")
-    #     # Find the maximum value in each row
-    #     max_values = np.max(ot_pi, axis=1)
-
-    #     # Create a new array with zero
-    #     ot_pi_keep_argmax = np.zeros_like(ot_pi)
-
-    #     # Loop through each row and set the maximum value to 1 (or any other desired value)
-    #     for i in range(ot_pi.shape[0]):
-    #         ot_pi_keep_argmax[i, np.argmax(ot_pi[i])] = max_values[i]
-    # else:
-    #     print("using pi in normal mode")
-
-    # print(ot_pi.shape)
-    # print(len(names1), len(names2))
-
-    mutual = set()
-    # k = 0
-    # print(np.count_nonzero(ot_pi_keep_argmax))
-    # for ot_pi in ot_pis:
-    for i in range(len(names1)):
-        for j in range(len(names2)):
-            if ot_pi[i][j] > conf_thres:
-                # k += 1
-                # print(ot_pi[i][j])
-                mutual.add((names1[i], names2[j]))
-    # print(k)
-    return mutual
+def load_embryo(root_dir='/home/yunfei/spatial_benchmarking/benchmarking_data/Embryo/', section_id='E11.5_E1S1'):
+    ad = sc.read_h5ad(os.path.join(root_dir, section_id + ".h5ad"))
+    ad.X = ad.layers['count']
+    ad.var_names_make_unique()
+    # make spot name unique
+    # adata.obs_names = [x + '_' + section_id for x in adata.obs_names]
+    ad.obs['original_clusters'] = ad.obs['annotation']
+    return ad
 
 
 def mnn(ds1, ds2, names1, names2, knn=20, save_on_disk=True, approx=True):
@@ -367,87 +173,6 @@ def nn(ds1, ds2, names1, names2, knn=50, metric_p=2):
     return match
 
 
-"""OT pi as inter-slice neighbors"""
-
-
-def create_dictionary_otn(adata, pis, section_ids, batch_name, conf_thres=0.0, mode='normal', verbose=1,
-                          iter_comb=None):
-    cell_names = adata.obs_names
-
-    batch_list = adata.obs[batch_name]
-    datasets = []
-    # datasets_pcs = []
-    cells = []
-    for i in batch_list.unique():
-        datasets.append(adata[batch_list == i])
-        # datasets_pcs.append(adata[batch_list == i].obsm[use_rep])
-        cells.append(cell_names[batch_list == i])
-
-    batch_name_df = pd.DataFrame(np.array(batch_list.unique()))
-    otns = dict()
-
-    if iter_comb is None:
-        iter_comb = list(itertools.combinations(range(len(cells)), 2))
-
-    # print(iter_comb)
-    assert len(iter_comb) == len(pis)
-    id_ = 0
-    for comb in iter_comb:
-        i = comb[0]
-        j = comb[1]
-        key_name1 = batch_name_df.loc[comb[0]].values[0] + "_" + batch_name_df.loc[comb[1]].values[0]
-        otns[
-            key_name1] = {}  # for multiple-slice setting, the key_names1 can avoid the mnns replaced by previous slice-pair
-        if (verbose > 0):
-            print('Processing datasets {}'.format((i, j)))
-
-        new = list(cells[j])
-        ref = list(cells[i])
-        # print(len(new))
-        # print(len(ref))
-        # print(pis[id_].shape)
-
-        # ds1 = adata[new].obsm[use_rep]
-        # ds2 = adata[ref].obsm[use_rep]
-        ot_pi = pis[id_]
-        id_ += 1
-        # names1 = new
-        # names2 = ref
-
-        """mapping direction might be a issue here"""
-        # mapping: new -> ref (151674[3635] -> 151673[3611])
-        # pi ()
-        #          ref: bc1, bc2, ..., bcn
-        #   new:    1   0    1    ...  0
-        #   bc1,    0   0    1    ...  1
-        #   bc2,    1   0    0    ...  0
-        #   ...,       ...
-        #   bcn     1   0    0    ...  1
-        # ot_pi is the ot transport matrix
-        # names2 are the ref barcodes
-        # names1 are the new barcodes
-        match = otn(ot_pi, ref, new, conf_thres, mode=mode)
-        # print(type(match))
-        # print(len(match))
-        # exit(-1)
-        G = nx.Graph()
-        G.add_edges_from(match)
-        node_names = np.array(G.nodes)
-        anchors = list(node_names)
-        adj = nx.adjacency_matrix(G)
-        tmp = np.split(adj.indices, adj.indptr[1:-1])
-
-        for i in range(0, len(anchors)):
-            key = anchors[i]
-            i = tmp[i]
-            names = list(node_names[i])
-            otns[key_name1][key] = names
-    return (otns)
-
-
-"""mnn as inter-slice neighbors"""
-
-
 def create_dictionary_mnn(adata, use_rep, batch_name, k=150, save_on_disk=True, approx=True, verbose=1, iter_comb=None):
     cell_names = adata.obs_names  # obs index (barcodes) of all spots
 
@@ -467,11 +192,6 @@ def create_dictionary_mnn(adata, use_rep, batch_name, k=150, save_on_disk=True, 
     if iter_comb is None:  # pairs of slices
         iter_comb = list(itertools.combinations(range(len(cells)), 2))
 
-    # print("cell names")
-    # print(cell_names)
-    # print("cells")
-    # print(cells)
-    # print(iter_comb[:20])
     for comb in iter_comb:
         i = comb[0]
         j = comb[1]
@@ -493,10 +213,6 @@ def create_dictionary_mnn(adata, use_rep, batch_name, k=150, save_on_disk=True, 
         names2 = ref
         # if k>1，one point in ds1 may have multiple MNN points in ds2.
         match = mnn(ds1, ds2, names1, names2, knn=k, save_on_disk=save_on_disk, approx=approx)
-        # print(type(match))
-        # print(len(match))
-        # print(match[:10])
-        # exit(-1)
 
         G = nx.Graph()
         G.add_edges_from(match)
@@ -553,28 +269,6 @@ def gmm_scikit(adata, num_cluster, modelNames='gmm', used_obsm='MDOT', random_se
     # adata.obs['mclust'] = adata.obs['mclust'].astype('string')
     adata.obs['mclust'] = adata.obs['mclust'].astype('category')
     return adata
-
-
-# cluster = 7/5  
-def load_dlpfc_sim(root_dir='./', section_id=''):
-    ad = sc.read_h5ad(filename=os.path.join(root_dir, section_id + '.h5ad'))
-    ad.var_names_make_unique()
-
-    ad.obs['original_clusters'] = ad.obs['spatial_domain']
-    return ad
-
-
-def load_embryo(root_dir='/home/yunfei/spatial_benchmarking/benchmarking_data/Embryo/', section_id='E11.5_E1S1'):
-#     section_ids = ['E11.5_E1S1', 'E12.5_E1S1']
-# for section_id in section_ids:
-#     print(section_id)
-    ad = sc.read_h5ad(os.path.join(root_dir, section_id + ".h5ad"))
-    ad.X = ad.layers['count']
-    ad.var_names_make_unique()
-    # make spot name unique
-    # adata.obs_names = [x + '_' + section_id for x in adata.obs_names]
-    ad.obs['original_clusters'] = ad.obs['annotation']
-    return ad
 
 
 # visualize everything for sanity check
