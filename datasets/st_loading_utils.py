@@ -480,43 +480,5 @@ def cal_layer_based_alignment_result_mhypo(alignment, s1, s2):
     return cnt0 / alignment.shape[0]
 
 
-# def cal_layer_based_alignment_result(alignment, s1, s2):
-#     labels = []
-#     labels.extend(s1.obs['original_clusters'])
-#     labels.extend(s2.obs['original_clusters'])
-
-#     res = []
-#     l_dict = {"0": 0, "1": 1, "2": 2, "3": 3, "4": 4, "5": 5, "6": 6}
-#     cnt0 = 0
-#     cnt1 = 0
-#     cnt2 = 0
-#     cnt3 = 0
-#     cnt4 = 0
-#     cnt5 = 0
-#     cnt6 = 0
-#     for i, elem in enumerate(alignment):
-#         if labels[i] == '-1' or labels[elem.argmax() + alignment.shape[0]] == '-1':
-#             continue
-#         if l_dict[labels[i]] == l_dict[labels[elem.argmax() + alignment.shape[0]]]:
-#             cnt0 += 1
-#         if abs(l_dict[labels[i]] - l_dict[labels[elem.argmax() + alignment.shape[0]]]) == 1:
-#             cnt1 += 1
-#         if abs(l_dict[labels[i]] - l_dict[labels[elem.argmax() + alignment.shape[0]]]) == 2:
-#             cnt2 += 1
-#         if abs(l_dict[labels[i]] - l_dict[labels[elem.argmax() + alignment.shape[0]]]) == 3:
-#             cnt3 += 1
-#         if abs(l_dict[labels[i]] - l_dict[labels[elem.argmax() + alignment.shape[0]]]) == 4:
-#             cnt4 += 1
-#         if abs(l_dict[labels[i]] - l_dict[labels[elem.argmax() + alignment.shape[0]]]) == 5:
-#             cnt5 += 1
-#         if abs(l_dict[labels[i]] - l_dict[labels[elem.argmax() + alignment.shape[0]]]) == 6:
-#             cnt6 += 1
-#     #print(alignment.shape[0])
-#     #print(cnt0/alignment.shape[0], cnt1/alignment.shape[0], cnt2/alignment.shape[0], cnt3/alignment.shape[0], cnt4/alignment.shape[0], cnt5/alignment.shape[0], cnt6/alignment.shape[0])
-#     #res.extend([cnt0/alignment.shape[0], cnt1/alignment.shape[0], cnt2/alignment.shape[0], cnt3/alignment.shape[0], cnt4/alignment.shape[0], cnt5/alignment.shape[0], cnt6/alignment.shape[0]])
-#     res.extend([cnt0, cnt1, cnt2, cnt3, cnt4, cnt5, cnt6])
-#     return res
-
-
 if __name__ == '__main__':
     pass
