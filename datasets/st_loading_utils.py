@@ -95,16 +95,18 @@ def load_mMAMP(root_dir='/home/yunfei/spatial_benchmarking/benchmarking_data/mMA
         gt_dir = os.path.join(root_dir, section_id, 'gt')
         gt_df = pd.read_csv(os.path.join(gt_dir, 'tissue_positions_list_GTs.txt'), sep='\t', header=0, index_col=0)
 
-        keep_bcs = gt_df.dropna().index
-        ad = ad[ad.obs.index.isin(keep_bcs)].copy()
-        gt_df = gt_df[gt_df.index.isin(ad.obs.index)].copy()
+        # Ensure all barcodes in `ad` are included in the ground truth DataFrame
+        gt_df = gt_df.reindex(ad.obs.index)
 
-        # ad.obs = gt_df
+        # Fill missing ground truth values with 'NA'
+        gt_df['ground_truth'] = gt_df['ground_truth'].fillna('NA')
+
+        # Add the ground truth column to `ad.obs`
         ad.obs['original_clusters'] = gt_df['ground_truth']
     except:
         ad.obs['original_clusters'] = 'NA'
         print("no gt available")
-    
+        
     spatial = np.vstack((ad.obs['x4'].to_numpy(), ad.obs['x5'].to_numpy()))
     ad.obsm['spatial'] = spatial.T
     return ad
@@ -258,17 +260,17 @@ def mclust_R(adata, num_cluster, modelNames='EEE', used_obsm='MDOT', used_obs='m
     return adata
 
 
-def gmm_scikit(adata, num_cluster, modelNames='gmm', used_obsm='MDOT', random_seed=666):
-    X = adata.obsm[used_obsm]
-    bgm = GaussianMixture(n_components=num_cluster, random_state=random_seed).fit(X)
-    # bgm.means_
-    lbls_gmm = bgm.predict(X)
+# def gmm_scikit(adata, num_cluster, modelNames='gmm', used_obsm='MDOT', random_seed=666):
+#     X = adata.obsm[used_obsm]
+#     bgm = GaussianMixture(n_components=num_cluster, random_state=random_seed).fit(X)
+#     # bgm.means_
+#     lbls_gmm = bgm.predict(X)
 
-    adata.obs['mclust'] = lbls_gmm
-    adata.obs['mclust'] = adata.obs['mclust'].astype('int')
-    # adata.obs['mclust'] = adata.obs['mclust'].astype('string')
-    adata.obs['mclust'] = adata.obs['mclust'].astype('category')
-    return adata
+#     adata.obs['mclust'] = lbls_gmm
+#     adata.obs['mclust'] = adata.obs['mclust'].astype('int')
+#     # adata.obs['mclust'] = adata.obs['mclust'].astype('string')
+#     adata.obs['mclust'] = adata.obs['mclust'].astype('category')
+#     return adata
 
 
 # visualize everything for sanity check

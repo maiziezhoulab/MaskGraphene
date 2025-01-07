@@ -596,9 +596,9 @@ def ma_loader(section_ids, args):
 
     with open(os.path.join(args.hl_dir, 'HL.pickle'), 'rb') as f:
         mapping_mat = np.load(f, allow_pickle=True).toarray()
-        mapping_mat_argmax = np.max(mapping_mat, axis=1, keepdims=True)
-        mapping_mat = mapping_mat_argmax
-    Batch_list[0], Batch_list[1] = simple_impute(Batch_list[0], Batch_list[1], mapping_mat_argmax)
+        # mapping_mat_argmax = np.max(mapping_mat, axis=1, keepdims=True)
+        # mapping_mat = mapping_mat_argmax
+    # Batch_list[0], Batch_list[1] = simple_impute(Batch_list[0], Batch_list[1], mapping_mat_argmax)
 
     Batch_list_new = []
     for ad_ in Batch_list:
