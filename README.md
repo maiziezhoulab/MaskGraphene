@@ -1,7 +1,7 @@
 <h1> MaskGraphene: an advanced framework for interpretable latent representation for multi-slice, multi-condition spatial transcriptomics </h1>
 
 Implementation for paper:  [MaskGraphene](https://www.biorxiv.org/content/10.1101/2024.02.21.581387v1.abstract).
-<img src="/figs/pipeline.png" alt="Pipeline Figure" width="300">
+<img src="/figs/pipeline.png" alt="Pipeline Figure" width="750">
 
 <h2>Online documentation </h2>
 
