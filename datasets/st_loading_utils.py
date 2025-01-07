@@ -111,14 +111,6 @@ def load_mMAMP(root_dir='/home/yunfei/spatial_benchmarking/benchmarking_data/mMA
     ad.obsm['spatial'] = spatial.T
     return ad
 
- 
-def load_dlpfc_sim(root_dir='./', section_id=''):
-    ad = sc.read_h5ad(filename=os.path.join(root_dir, section_id + '.h5ad'))
-    ad.var_names_make_unique()
-
-    ad.obs['original_clusters'] = ad.obs['spatial_domain']
-    return ad
-
 
 def load_embryo(root_dir='/home/yunfei/spatial_benchmarking/benchmarking_data/Embryo/', section_id='E11.5_E1S1'):
     ad = sc.read_h5ad(os.path.join(root_dir, section_id + ".h5ad"))

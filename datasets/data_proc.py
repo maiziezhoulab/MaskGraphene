@@ -662,9 +662,10 @@ def embryo_loader(section_ids, args):
     cls_ = len(Batch_list[0].obs['annotation'].unique())
     id1_ = section_ids[0].split("_")[0][1:]
     id2_ = section_ids[1].split("_")[0][1:]
-    print(id1_, id2_)
-    mapping_mat = np.load(os.path.join('/maiziezhou_lab/yunfei/Projects/MaskGraphene_dev0625/aligned_coord_localOT/Embryo_mapping', id1_ + 'and' + id2_ + '_round1_alpha0.1_localOt_kl_iniPI_paste1_AlignmentPi.npy'.format(section_ids[1].split(".")[0])))
-    best_matches = np.argmax(mapping_mat, axis=1)
+    # print(id1_, id2_)
+    with open(os.path.join(args.hl_dir, 'HL.pickle'), 'rb') as f:
+        mapping_mat = np.load(f, allow_pickle=True).toarray()
+        best_matches = np.argmax(mapping_mat, axis=1)
     mapped_coords1 = Batch_list[1].obsm['spatial'][best_matches]
     Batch_list[0].obsm['spatial'] = mapped_coords1
 
@@ -685,10 +686,6 @@ def embryo_loader(section_ids, args):
     
     
     return adj_spatial, adata_concat, cls_
-
-
-def heart_ST_loader(section_ids, args):
-    pass
 
 
 def dlpfc_sim_loader(section_ids=['DLPFC_151673original_spotIndex.h5', 'DLPFC_151673_overlap=100%_pseudocount_0_spotIndex.h5'], args=None):
