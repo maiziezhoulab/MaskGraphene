@@ -475,38 +475,38 @@ def mhypo_multi_loader(section_ids, args):
     return adj_spatial, adata_concat, cls_
 
 
-# def MB_loader(section_ids, args):
-#     Batch_list = []
-#     adj_list = []
-#     cls_ = 0
-#     for section_id in section_ids:
-#         ad_ = sc.read_h5ad(os.path.join(args.st_data_dir, 'merfish_mouse_brain_slice' + str(section_id) + '.h5ad'))
-#         ad_.var_names_make_unique(join="++")
+def MB_loader_transform(section_ids, args):
+    Batch_list = []
+    adj_list = []
+    cls_ = 0
+    for section_id in section_ids:
+        ad_ = sc.read_h5ad(os.path.join(args.st_data_dir, 'merfish_mouse_brain_slice' + str(section_id) + '.h5ad'))
+        ad_.var_names_make_unique(join="++")
     
-#         # make spot name unique
-#         ad_.obs_names = [x+'_'+section_id for x in ad_.obs_names]
-#         # print(ad_.obs)
-#         # print(ad_.obs.columns)
-#         cls_ = max(cls_, len(ad_.obs['spa_cluster'].unique()))
-#         ad_.obs['original_clusters'] = ad_.obs['spa_cluster']
-#         align_coord = pd.read_csv(os.path.join(args.hl_dir, 'refined_coordinates_{}.csv'.format(section_id)), index_col=0)
-#         ad_.obsm['spatial_aligned'] = align_coord.values
+        # make spot name unique
+        ad_.obs_names = [x+'_'+section_id for x in ad_.obs_names]
+        # print(ad_.obs)
+        # print(ad_.obs.columns)
+        cls_ = max(cls_, len(ad_.obs['spa_cluster'].unique()))
+        ad_.obs['original_clusters'] = ad_.obs['spa_cluster']
+        align_coord = pd.read_csv(os.path.join(args.hl_dir, 'refined_coordinates_{}.csv'.format(section_id)), index_col=0)
+        ad_.obsm['spatial_aligned'] = align_coord.values
 
-#         # Normalization
-#         sc.pp.normalize_total(ad_, target_sum=1e4)
-#         sc.pp.log1p(ad_)
+        # Normalization
+        sc.pp.normalize_total(ad_, target_sum=1e4)
+        sc.pp.log1p(ad_)
 
-#         Batch_list.append(ad_)
+        Batch_list.append(ad_)
     
-#     adata_concat = ad.concat(Batch_list, label="slice_name", keys=section_ids, uns_merge="same")
-#     adata_concat.obs["batch_name"] = adata_concat.obs["slice_name"].astype('category')
+    adata_concat = ad.concat(Batch_list, label="slice_name", keys=section_ids, uns_merge="same")
+    adata_concat.obs["batch_name"] = adata_concat.obs["slice_name"].astype('category')
 
-#     adj_spatial = get_adjacency_matrix(adata_concat.obsm['spatial_aligned'], k=10, metric='euclidean')
+    adj_spatial = get_adjacency_matrix(adata_concat.obsm['spatial_aligned'], k=10, metric='euclidean')
     
-#     return adj_spatial, adata_concat, cls_
+    return adj_spatial, adata_concat, cls_
 
 
-def transform_coords(slices, mapping_matrices, obsm_name):
+def replace_coords(slices, mapping_matrices, obsm_name):
 
     assert len(slices) == len(mapping_matrices) + 1
 
@@ -527,7 +527,7 @@ def transform_coords(slices, mapping_matrices, obsm_name):
     return slices
 
 
-def MB_loader(section_ids, args):
+def MB_loader_replace(section_ids, args):
     Batch_list = []
     adj_list = []
     cls_ = 0
@@ -557,7 +557,7 @@ def MB_loader(section_ids, args):
             mapping_mat = np.load(f, allow_pickle=True).toarray()
             mapping_matrices.append(mapping_mat)
     
-    Batch_list = transform_coords(Batch_list, mapping_matrices, obsm_name='spatial')
+    Batch_list = replace_coords(Batch_list, mapping_matrices, obsm_name='spatial')
     # print(Batch_list)
     
     adata_concat = ad.concat(Batch_list, label="slice_name", keys=section_ids, uns_merge="same")
@@ -827,10 +827,13 @@ def load_ST_dataset(dataset_name, section_ids=["151507", "151508"], args_=None):
         graph.ndata["feat"] = torch.tensor(adata_concat.X).float()
     elif dataset_name == "MB":
         # if len(section_ids) == 10:
-        adj_concat, adata_concat, num_classes = MB_loader(section_ids, args_)
-        # else:
-        #     print("invalid slice number")
-        #     exit(-10)
+        if args_.hl == 'replace':
+            adj_concat, adata_concat, num_classes = MB_loader_replace(section_ids, args_)
+        elif args_.hl == 'transform':
+            adj_concat, adata_concat, num_classes = MB_loader_transform(section_ids, args_)
+        else:
+            print("hl usage not applicable")
+            exit(-10)
         
         edgeList = np.nonzero(adj_concat)
         graph = dgl.graph((edgeList[0], edgeList[1]))
