@@ -31,7 +31,7 @@ conda create -n MaskGraphene python=3.9
 
 conda activate MaskGraphene
 
-git clone https://github.com/OliiverHu/MaskGraphene.git
+git clone https://github.com/maiziezhoulab/MaskGraphene.git
 
 pip install -r requirements.txt
 
