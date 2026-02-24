@@ -23,7 +23,7 @@ from utils_local_alignment import (
     get_current_lr
 )
 from datasets.st_loading_utils import mclust_R
-from datasets.st_loading_utils import load_DLPFC, create_dictionary_mnn, load_mHypothalamus, load_embryo, load_mMAMP
+from datasets.st_loading_utils import load_DLPFC, create_dictionary_mnn, load_mHypothalamus, load_embryo, load_mMAMP, load_breast_cancer, load_drosophila
 from datasets.data_proc import Cal_Spatial_Net
 from models import build_model_ST
 
@@ -113,7 +113,6 @@ def local_alignment_loader(section_ids=["151507", "151508"], dataname="DLPFC", h
         graph.ndata["feat"] = torch.tensor(adata_concat.X).float()
         num_features = graph.ndata["feat"].shape[1]
 
-    ## fei added on 11/08/23
     elif dataname == "embryo":
         Batch_list = []
         adj_list = []
@@ -147,7 +146,72 @@ def local_alignment_loader(section_ids=["151507", "151508"], dataname="DLPFC", h
         graph = dgl.graph((edgeList[0], edgeList[1]))
         graph.ndata["feat"] = torch.tensor(adata_concat.X.todense())
         num_features = graph.ndata["feat"].shape[1]
-    
+    elif dataname == "drosophila":
+        Batch_list = []
+        adj_list = []
+        for section_id in section_ids:
+            ad_ = load_drosophila(root_dir=st_data_dir, section_id=section_id)
+            ad_.var_names_make_unique(join="++")
+            # ad_.X = ad_.X.toarray()
+            # make spot name unique
+            ad_.obs_names = [x+'_'+section_id for x in ad_.obs_names]
+            
+            # Constructing the spatial network
+            Cal_Spatial_Net(ad_, rad_cutoff=1.5) # the spatial network are saved in adata.uns[‘adj’]
+            
+            # Normalization
+            sc.pp.highly_variable_genes(ad_, flavor="seurat_v3", n_top_genes=hvgs)
+            sc.pp.normalize_total(ad_, target_sum=1e4)
+            sc.pp.log1p(ad_)
+            ad_ = ad_[:, ad_.var['highly_variable']]
+
+            adj_list.append(ad_.uns['adj'])
+            Batch_list.append(ad_)
+        adata_concat = ad.concat(Batch_list, label="slice_name", keys=section_ids, uns_merge="same")
+        adata_concat.obs['original_clusters'] = adata_concat.obs['original_clusters'].astype('category')
+        adata_concat.obs["batch_name"] = adata_concat.obs["slice_name"].astype('category')
+
+        adj_concat = np.asarray(adj_list[0].todense())
+        for batch_id in range(1,len(section_ids)):
+            adj_concat = scipy.linalg.block_diag(adj_concat, np.asarray(adj_list[batch_id].todense()))
+
+        edgeList = np.nonzero(adj_concat)
+        graph = dgl.graph((edgeList[0], edgeList[1]))
+        graph.ndata["feat"] = torch.tensor(adata_concat.X)
+        num_features = graph.ndata["feat"].shape[1]
+    elif dataname == "breastcancer":
+        Batch_list = []
+        adj_list = []
+        for section_id in section_ids:
+            ad_ = load_breast_cancer(root_dir=st_data_dir, section_id=section_id)
+            ad_.var_names_make_unique(join="++")
+            # ad_.X = ad_.X.toarray()
+            # make spot name unique
+            ad_.obs_names = [x+'_'+section_id for x in ad_.obs_names]
+            
+            # Constructing the spatial network
+            Cal_Spatial_Net(ad_, rad_cutoff=1.5) # the spatial network are saved in adata.uns[‘adj’]
+            
+            # Normalization
+            sc.pp.highly_variable_genes(ad_, flavor="seurat_v3", n_top_genes=hvgs)
+            sc.pp.normalize_total(ad_, target_sum=1e4)
+            sc.pp.log1p(ad_)
+            ad_ = ad_[:, ad_.var['highly_variable']]
+
+            adj_list.append(ad_.uns['adj'])
+            Batch_list.append(ad_)
+        adata_concat = ad.concat(Batch_list, label="slice_name", keys=section_ids, uns_merge="same")
+        adata_concat.obs['original_clusters'] = adata_concat.obs['original_clusters'].astype('category')
+        adata_concat.obs["batch_name"] = adata_concat.obs["slice_name"].astype('category')
+
+        adj_concat = np.asarray(adj_list[0].todense())
+        for batch_id in range(1,len(section_ids)):
+            adj_concat = scipy.linalg.block_diag(adj_concat, np.asarray(adj_list[batch_id].todense()))
+
+        edgeList = np.nonzero(adj_concat)
+        graph = dgl.graph((edgeList[0], edgeList[1]))
+        graph.ndata["feat"] = torch.tensor(adata_concat.X.todense())
+        num_features = graph.ndata["feat"].shape[1]
     elif dataname == "DLPFC_sim":
         Batch_list = []
         adj_list = []
@@ -254,7 +318,7 @@ def local_alignment_loader(section_ids=["151507", "151508"], dataname="DLPFC", h
             # print(ad_.obs)
             # print(ad_.obs.columns)
             ad_.obs['original_clusters'] = ad_.obs['spa_cluster']
-            d_.obsm['spatial'] = ad_.obsm['spatial'][['X', 'Y']]
+            ad_.obsm['spatial'] = ad_.obsm['spatial'][['X', 'Y']]
             # Constructing the spatial network
             Cal_Spatial_Net(ad_, rad_cutoff=40) # the spatial network are saved in adata.uns[‘adj’]
 
@@ -423,7 +487,6 @@ def localMG(args):
     sim_dir = args.sim_dir
     alpha_value = args.alpha_value
     hard_link_dir = args.hard_link_dir
-    ROUND = args.ROUND
 
     max_epoch = args.max_epoch
     max_epoch_triplet = args.max_epoch_triplet
@@ -458,7 +521,7 @@ def localMG(args):
         # print(f"####### Run {i} for seed {seed}")
         set_random_seed(seed)
         
-        graph, num_features, ad_concat = local_alignment_loader(section_ids=section_ids, hvgs=args.hvgs, st_data_dir=st_data_dir, sim_dir=sim_dir, dataname=dataset_name, hard_links=None)
+        graph, num_features, ad_concat = local_alignment_loader(section_ids=section_ids, hvgs=args.hvgs, st_data_dir=st_data_dir, sim_dir=sim_dir, dataname=dataset_name)
         args.num_features = num_features
         # print(args)
         model_local_ot = build_model_ST(args)
@@ -473,7 +536,7 @@ def localMG(args):
         else:
             scheduler = None
         
-        batchlist_, ad_concaT = run_local_alignment(graph, model_local_ot, device, ad_concat, section_ids, max_epoch=max_epoch, max_epoch_triplet=max_epoch_triplet, optimizer=optimizer, scheduler=scheduler, logger=logger, num_class=num_class, use_mnn=True)
+        batchlist_, ad_concat_out = run_local_alignment(graph, model_local_ot, device, ad_concat, section_ids, max_epoch=max_epoch, max_epoch_triplet=max_epoch_triplet, optimizer=optimizer, scheduler=scheduler, logger=logger, num_class=num_class, use_mnn=True)
 
         slice1 = batchlist_[0]
         slice2 = batchlist_[1]
@@ -487,39 +550,56 @@ def localMG(args):
             slice2_idx_mapping[slice2.obs.index[i]] = i
         
         for i in range(num_class):
-            print("run for cluster:", i)
-            subslice1 = slice1[slice1.obs['mclust']==i+1]
-            subslice2 = slice2[slice2.obs['mclust']==i+1]
-            if subslice1.shape[0]>0 and subslice2.shape[0]>0:
-                if subslice1.shape[0]>1 and subslice2.shape[0]>1: 
-                    pi00 = paste.match_spots_using_spatial_heuristic(subslice1.obsm['spatial'], subslice2.obsm['spatial'], use_ot=True)
-                    local_PI = paste.pairwise_align(subslice1, subslice2, alpha=alpha_value, dissimilarity='kl', use_rep=None, norm=True, verbose=True, G_init=pi00, use_gpu = True, backend = ot.backend.TorchBackend())
-                else:  # if there is only one spot in a slice, spatial dissimilarity can't be normalized
-                    local_PI = paste.pairwise_align(subslice1, subslice2, alpha=alpha_value, dissimilarity='kl', use_rep=None, norm=False, verbose=True, G_init=None, use_gpu = True, backend = ot.backend.TorchBackend())
+            print("Run for cluster:", i)
+            subslice1 = slice1[slice1.obs['mclust'] == i + 1]
+            subslice2 = slice2[slice2.obs['mclust'] == i + 1]
+
+            if subslice1.shape[0] > 0 and subslice2.shape[0] > 0:
+                if subslice1.shape[0] > 1 and subslice2.shape[0] > 1: 
+                    pi00 = paste.match_spots_using_spatial_heuristic(
+                        subslice1.obsm['spatial'],
+                        subslice2.obsm['spatial'],
+                        use_ot=True
+                    )
+                    local_PI = paste.pairwise_align(
+                        subslice1, subslice2, alpha=alpha_value,
+                        dissimilarity='kl', use_rep=None, norm=True,
+                        verbose=True, G_init=pi00, use_gpu=True,
+                        backend=ot.backend.TorchBackend()
+                    )
+                else:
+                    print(f"⚠️ Only one spot in cluster {i} — skipping spatial normalization.")
+                    local_PI = paste.pairwise_align(
+                        subslice1, subslice2, alpha=alpha_value,
+                        dissimilarity='kl', use_rep=None, norm=False,
+                        verbose=True, G_init=None, use_gpu=True,
+                        backend=ot.backend.TorchBackend()
+                    )
+
                 for ii in range(local_PI.shape[0]):
                     for jj in range(local_PI.shape[1]):
                         global_PI[slice1_idx_mapping[subslice1.obs.index[ii]]][slice2_idx_mapping[subslice2.obs.index[jj]]] = local_PI[ii][jj]
-                        # cluster_matrix[slice1_idx_mapping[subslice1.obs.index[ii]]][slice2_idx_mapping[subslice2.obs.index[jj]]] = i
+                        # cluster_matrix[...] = i
+
             else:
-                return None
+                print(f"⚠️ Skipping cluster {i}: insufficient data in one of the slices.")
+                continue
 
     file_name = section_ids[0]+'_'+section_ids[1] +'_'+str(alpha_value)
-    mapping_mat = scipy.sparse.csr_matrix(global_PI)
-    file = open(os.path.join(exp_fig_dir, file_name+"_HL.pickle"),'wb')
-    pickle.dump(mapping_mat, file)
-
-
-    new_slices = paste.stack_slices_pairwise(batchlist_, mapping_mat)
+    
+    # print(len(batchlist_))
+    # print(len(global_PI))
+    new_slices = paste.stack_slices_pairwise(batchlist_, [global_PI])
     for i,L in enumerate(new_slices):
         spatial_data = L.obsm['spatial']
 
         output_path = os.path.join(exp_fig_dir, f"coordinates_{section_ids[i]}.csv")
         pd.DataFrame(spatial_data).to_csv(output_path, index=False)
         print(f"Saved spatial data for slice {i} to {output_path}")
-    # file_name = section_ids[0]+'_'+section_ids[1] +'_a'+str(alpha_value)
-    # file2 = open(os.path.join(exp_fig_dir, file_name+"_Cluster_matrix.pickle"),'wb')
-    # S2 = scipy.sparse.csr_matrix(cluster_matrix)
-    # pickle.dump(S2, file2)
+    
+    mapping_mat = scipy.sparse.csr_matrix(global_PI)
+    file = open(os.path.join(exp_fig_dir, file_name+"_HL.pickle"),'wb')
+    pickle.dump(mapping_mat, file)
 
     return global_PI, batchlist_
 
