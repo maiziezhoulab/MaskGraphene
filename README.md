@@ -103,6 +103,10 @@ python ../maskgraphene_main.py --max_epoch 2000 --max_epoch_triplet 500 --loggin
                                --seeds 2023 --num_remasking 1 --hvgs 3000 --dataset DLPFC --consecutive_prior 1 --lr 0.001
 ```
 
+**Minibatch training for Embryo data**
+
+please refer to [maskgraphene_minibatch.py](https://github.com/maiziezhoulab/MaskGraphene/blob/main/maskgraphene_minibatch.py)
+
 Open-source ST datasets information:
 
 | ST Dataset                                     | ST Type         | Abbreviations | ST Protocol   | Num. of Slices | Data Source | Annotation Source | Download Link |
